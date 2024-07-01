@@ -1,8 +1,12 @@
 # Python Order System
 
-Order - SQL + redis
-Payment - dynamodb
-Production - dynamodb
+## Microservices
+
+- Product Catalogue - MySQL + redis
+- Order - MySQL
+- Order Management - DynamoDB
+- Order Payment - DynamoDB
+- Product Search - DynamoDB
 
 ## Glossary
 
