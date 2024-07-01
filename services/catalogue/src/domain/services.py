@@ -1,3 +1,5 @@
+from typing import Optional
+
 from src.domain.entities import Product
 from src.domain.exceptions import (
     DeleteProductError,
@@ -33,7 +35,7 @@ class CatalogueService:
         sku: str,
         name: str,
         description: str,
-        image_url: str,
+        image_url: Optional[str],
         price: Price,
         inventory: Inventory,
     ) -> Product:
@@ -88,7 +90,7 @@ class CatalogueService:
         sku: str,
         name: str,
         description: str,
-        image_url: str,
+        image_url: Optional[str],
         price: Price,
         inventory: Inventory,
     ) -> Product:

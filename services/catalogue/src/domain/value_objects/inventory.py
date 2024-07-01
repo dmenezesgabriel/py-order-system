@@ -6,7 +6,10 @@ from src.domain.exceptions import InvalidInventory
 
 class Inventory:
     def __init__(
-        self, quantity: int, reserved: int = 0, id: Optional[UUID] = None
+        self,
+        quantity: int,
+        reserved: Optional[int] = 0,
+        id: Optional[UUID] = None,
     ):
         self._id = id
         self._quantity = self._validate_quantity(quantity)
@@ -21,7 +24,7 @@ class Inventory:
         return quantity
 
     @staticmethod
-    def _validate_reserved(reserved: int, quantity: int) -> int:
+    def _validate_reserved(reserved: Optional[int], quantity: int) -> int:
         if reserved is None:
             raise InvalidInventory("Reserved field is mandatory.")
         if reserved < 0:

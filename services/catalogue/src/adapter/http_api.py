@@ -13,6 +13,7 @@ from domain.exceptions import (
     InvalidName,
     InvalidPrice,
     InvalidSku,
+    OutdatedProduct,
     ProductAlreadyExist,
     ProductNotFound,
 )
@@ -40,19 +41,31 @@ class HTTPAPIAdapter:
 
     def create_product(self, product: ProductRequestDTO) -> ProductResponseDTO:
         try:
+            inventory = None
+            price = None
+            if product.inventory is not None:
+                inventory = Inventory(
+                    quantity=product.inventory.quantity,
+                    reserved=product.inventory.reserved or 0,
+                )
+            if product.price is not None:
+                price = Price(
+                    value=product.price.value,
+                    discount_percent=product.price.discount_percent,
+                )
             created_product: Product = self.__catalogue_service.create_product(
                 sku=product.sku,
                 name=product.name,
                 description=product.description,
                 image_url=product.image_url,
-                price=product.price,
-                inventory=product.inventory,
+                price=price,
+                inventory=inventory,
             )
-            price = PriceDTO(
+            price_dto = PriceDTO(
                 value=created_product.price.value,
                 discount_percent=created_product.price.discount_percent,
             )
-            inventory = InventoryDTO(
+            inventory_dto = InventoryDTO(
                 quantity=created_product.inventory.quantity,
                 reserved=created_product.inventory.reserved,
             )
@@ -62,8 +75,8 @@ class HTTPAPIAdapter:
                 name=created_product.name,
                 description=created_product.description,
                 image_url=created_product.image_url,
-                price=price,
-                inventory=inventory,
+                price=price_dto,
+                inventory=inventory_dto,
             )
         except (
             InvalidSku,
@@ -118,16 +131,22 @@ class HTTPAPIAdapter:
                 status_code=500, detail=f"Error getting product: {error}"
             )
 
-    def update_product(self, sku: str, product: ProductRequestDTO):
+    def update_product(
+        self, sku: str, product: ProductRequestDTO
+    ) -> ProductResponseDTO:
         try:
-            inventory = Inventory(
-                quantity=product.inventory.quantity,
-                reserved=product.inventory.reserved,
-            )
-            price = Price(
-                value=product.price.value,
-                discount_percent=product.price.discount_percent,
-            )
+            inventory = None
+            price = None
+            if product.inventory is not None:
+                inventory = Inventory(
+                    quantity=product.inventory.quantity,
+                    reserved=product.inventory.reserved,
+                )
+            if product.price is not None:
+                price = Price(
+                    value=product.price.value,
+                    discount_percent=product.price.discount_percent,
+                )
             updated_product: Product = self.__catalogue_service.update_product(
                 sku=sku,
                 name=product.name,
@@ -140,7 +159,6 @@ class HTTPAPIAdapter:
                 quantity=updated_product.inventory.quantity,
                 reserved=updated_product.inventory.reserved,
             )
-
             price_dto = PriceDTO(
                 value=updated_product.price.value,
                 discount_percent=updated_product.price.discount_percent,
@@ -154,5 +172,44 @@ class HTTPAPIAdapter:
                 price=price_dto,
                 sku=updated_product.sku,
             )
+        except (
+            InvalidSku,
+            InvalidPrice,
+            InvalidName,
+            InvalidInventory,
+            InvalidPrice,
+            InvalidImageUrl,
+            InvalidDescription,
+        ) as error:
+            raise HTTPException(
+                status_code=400, detail=f"Error updating product: {error}"
+            )
+        except ProductNotFound as error:
+            raise HTTPException(
+                status_code=404, detail=f"Error updating product: {error}"
+            )
+        except OutdatedProduct as error:
+            raise HTTPException(
+                status_code=409, detail=f"Error updating product: {error}"
+            )
         except Exception as error:
-            pass
+            raise HTTPException(
+                status_code=500, detail=f"Error updating product: {error}"
+            )
+
+    def delete_product(self, sku: str) -> bool:
+        try:
+            self.__catalogue_service.delete_product(sku)
+            return True
+        except InvalidSku as error:
+            raise HTTPException(
+                status_code=400, detail=f"Error deleting product: {error}"
+            )
+        except ProductNotFound as error:
+            raise HTTPException(
+                status_code=404, detail=f"Error deleting product: {error}"
+            )
+        except Exception as error:
+            raise HTTPException(
+                status_code=500, detail=f"Error deleting product: {error}"
+            )

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 class InventoryDTO(BaseModel):
     quantity: int
-    reserved: int
+    reserved: Optional[int] = 0
 
 
 class PriceDTO(BaseModel):
@@ -18,9 +18,9 @@ class ProductRequestDTO(BaseModel):
     sku: str
     name: str
     description: str
-    image_url: str
-    price: PriceDTO
-    inventory: InventoryDTO
+    image_url: Optional[str] = None
+    price: Optional[PriceDTO] = None
+    inventory: Optional[InventoryDTO] = None
 
 
 class ProductResponseDTO(BaseModel):
@@ -28,6 +28,6 @@ class ProductResponseDTO(BaseModel):
     sku: str
     name: str
     description: str
-    image_url: Optional[str]
-    price: PriceDTO
-    inventory: InventoryDTO
+    image_url: Optional[str] = None
+    price: Optional[PriceDTO] = None
+    inventory: Optional[InventoryDTO] = None
