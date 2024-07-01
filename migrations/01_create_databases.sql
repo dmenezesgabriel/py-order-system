@@ -1,5 +1,1 @@
-CREATE DATABASE inventory;
-CREATE DATABASE catalogue;
-CREATE DATABASE pricing;
-CREATE DATABASE search_product;
-CREATE DATABASE order;
+-- CREATE DATABASE catalogue;

@@ -1,9 +1,9 @@
 import json
 
 import boto3
-from adapter.exceptions import SqsException
-from domain.entities import Product
-from port.event_publishers import ProductEventPublisher
+from src.adapter.exceptions import SqsException
+from src.domain.entities import Product
+from src.port.event_publishers import ProductEventPublisher
 
 
 class SQSAdapter(ProductEventPublisher):

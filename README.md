@@ -12,6 +12,33 @@
 
 - SKU: Stock Keeping Unit
 
+## Postgres
+
+- **List Schemas**:
+
+```sh
+docker compose exec services-db /bin/bash
+```
+
+```sh
+psql -U postgres
+```
+
+```sh
+# database_name
+\c postgres
+```
+
+```sh
+# Tables
+\dt
+```
+
+```sh
+SELECT schema_name
+FROM information_schema.schemata;
+```
+
 ## Resources
 
 - [er-diagram-for-online-shop](https://vertabelo.com/blog/er-diagram-for-online-shop/)

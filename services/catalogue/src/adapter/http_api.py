@@ -1,11 +1,12 @@
-from adapter.dto import (
+from fastapi import APIRouter, HTTPException
+from src.adapter.dto import (
     InventoryDTO,
     PriceDTO,
     ProductRequestDTO,
     ProductResponseDTO,
 )
-from domain.entities import Product
-from domain.exceptions import (
+from src.domain.entities import Product
+from src.domain.exceptions import (
     DuplicatedProduct,
     InvalidDescription,
     InvalidImageUrl,
@@ -17,9 +18,8 @@ from domain.exceptions import (
     ProductAlreadyExist,
     ProductNotFound,
 )
-from domain.services import CatalogueService
-from domain.value_objects import Inventory, Price
-from fastapi import APIRouter, HTTPException
+from src.domain.services import CatalogueService
+from src.domain.value_objects import Inventory, Price
 
 
 class HTTPAPIAdapter:

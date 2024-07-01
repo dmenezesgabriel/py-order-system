@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from domain.entities.product import Product
+from src.domain.entities.product import Product
 
 
 class ProductEventPublisher(ABC):
