@@ -1,0 +1,350 @@
+{
+  "item": [
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Create Inventory",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sku\": \"{{sku}}\",\n    \"em_inventory\": 20,\n    \"reservedo\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{inventoryPort}}/inventory",
+              "host": ["{{baseUrl}}"],
+              "port": "{{inventoryPort}}",
+              "path": ["inventory"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Inventory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{inventoryPort}}/inventory/{{sku}}",
+              "host": ["{{baseUrl}}"],
+              "port": "{{inventoryPort}}",
+              "path": ["inventory", "{{sku}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Inventory",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sku\": \"{{sku}}\",\n    \"em_inventory\": 6,\n    \"reservedo\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{inventoryPort}}/inventory/{{sku}}",
+              "host": ["{{baseUrl}}"],
+              "port": "{{inventoryPort}}",
+              "path": ["inventory", "{{sku}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Inventory",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{inventoryPort}}/inventory/{{sku}}",
+              "host": ["{{baseUrl}}"],
+              "port": "{{inventoryPort}}",
+              "path": ["inventory", "{{sku}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reserve Inventory",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"operations\": [\n        {\n            \"sku\": \"{{sku}}\",\n            \"quantity\": 1\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{inventoryPort}}/inventory/reserve",
+              "host": ["{{baseUrl}}"],
+              "port": "{{inventoryPort}}",
+              "path": ["inventory", "reserve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deduce Inventory",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"operations\": [\n        {\n            \"sku\": \"{{sku}}\",\n            \"quantity\": 1\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{inventoryPort}}/inventory/deduce",
+              "host": ["{{baseUrl}}"],
+              "port": "{{inventoryPort}}",
+              "path": ["inventory", "deduce"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pricing",
+      "item": [
+        {
+          "name": "Create Price",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sku\": \"{{sku}}\",\n    \"price\": 12.5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{pricingPort}}/price",
+              "host": ["{{baseUrl}}"],
+              "port": "{{pricingPort}}",
+              "path": ["price"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Price",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{pricingPort}}/price/{{sku}}",
+              "host": ["{{baseUrl}}"],
+              "port": "{{pricingPort}}",
+              "path": ["price", "{{sku}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Price",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sku\": \"{{sku}}\",\n    \"price\": 1.0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{pricingPort}}/price/{{sku}}",
+              "host": ["{{baseUrl}}"],
+              "port": "{{pricingPort}}",
+              "path": ["price", "{{sku}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Price",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{pricingPort}}/price/{{sku}}",
+              "host": ["{{baseUrl}}"],
+              "port": "{{pricingPort}}",
+              "path": ["price", "{{sku}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Catalogue",
+      "item": [
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sku\": \"{{sku}}\",\n    \"name\": \"Lâmpada 9W LED\",\n    \"description\": \"Lâmpada 9W LED com soquete E27 ...\",\n    \"imageUrl\": \"https://imagens.fiapstore.com.br/product/{{sku}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{cataloguePort}}/product",
+              "host": ["{{baseUrl}}"],
+              "port": "{{cataloguePort}}",
+              "path": ["product"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{cataloguePort}}/product/{{sku}}",
+              "host": ["{{baseUrl}}"],
+              "port": "{{cataloguePort}}",
+              "path": ["product", "{{sku}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sku\": \"{{sku}}\",\n    \"name\": \"Lâmpada 12W LED\",\n    \"description\": \"Lâmpada 12W LED com soquete E27 ...\",\n    \"imageUrl\": \"https://imagens.fiapstore.com.br/product/{{sku}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}:{{cataloguePort}}/product/{{sku}}",
+              "host": ["{{baseUrl}}"],
+              "port": "{{cataloguePort}}",
+              "path": ["product", "{{sku}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{cataloguePort}}/product/{{sku}}",
+              "host": ["{{baseUrl}}"],
+              "port": "{{cataloguePort}}",
+              "path": ["product", "{{sku}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Search Product",
+      "item": [
+        {
+          "name": "Get Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{searchProductPort}}/product/{{sku}}",
+              "host": ["{{baseUrl}}"],
+              "port": "{{searchProductPort}}",
+              "path": ["product", "{{sku}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}:{{searchProductPort}}/product?sku={{sku}}&name=lamp&description=LED",
+              "host": ["{{baseUrl}}"],
+              "port": "{{searchProductPort}}",
+              "path": ["product"],
+              "query": [
+                {
+                  "key": "sku",
+                  "value": "{{sku}}"
+                },
+                {
+                  "key": "name",
+                  "value": "lamp"
+                },
+                {
+                  "key": "description",
+                  "value": "LED"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

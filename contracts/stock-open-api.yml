@@ -1,0 +1,64 @@
+openapi: 3.0.3
+info:
+  title: Python Order System
+  description: |-
+    Order System API
+  termsOfService: https://example.com.br/terms-of-use/
+  contact:
+    email: squad-website@example.com.br
+  version: 1.0.0
+externalDocs:
+  description: Find out more about Swagger
+  url: https://docs.api.example.com.br/
+servers:
+  - url: http://localhost:8000
+tags:
+  - name: inventory
+    description: Inventory endpoints
+
+paths:
+  /inventory:
+    post:
+      tags:
+        - inventory
+      summary: Creates a new product inventory
+      description: Allow add a inventory register for a new product
+      operationId: createInventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewInventory"
+        required: true
+      responses:
+        "200":
+          description: Inventory register successfully added
+        "400":
+          description: Error trying to register a inventory
+        "401":
+          description: Invalid credential
+        "422":
+          description: Incomplete parameters
+components:
+  schemas:
+    NewInventory:
+      type: object
+      properties:
+        sku:
+          type: string
+        in_stock:
+          type: integer
+        reserved:
+          type: integer
+          default: 0
+      example:
+        sku: "123"
+        in_stock: 10
+        reserved: 0
+
+  securitySchemes:
+    website_auth:
+      type: http
+      scheme: basic
+security:
+  - website_auth: []
