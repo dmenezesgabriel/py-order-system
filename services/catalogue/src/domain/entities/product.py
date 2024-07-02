@@ -1,5 +1,5 @@
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from src.domain.exceptions import (
     InvalidDescription,
@@ -23,7 +23,7 @@ class Product:
         id: Optional[UUID] = None,
     ):
 
-        self._id = id
+        self._id = id or uuid4()
         self._version = version
         self._sku = self.validate_sku(sku)
         self._name = self.validate_name(name)
@@ -100,7 +100,7 @@ class Product:
 
     def to_dict(self) -> dict:
         return {
-            "id": self.id,
+            "id": str(self.id),
             "version": self.version,
             "sku": self.sku,
             "name": self.name,

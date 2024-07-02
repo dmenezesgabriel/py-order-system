@@ -1,12 +1,12 @@
+import os
+
 from fastapi import FastAPI
 from src.adapter.http_api import HTTPAPIAdapter
 from src.adapter.postgres import ProductPostgresAdapter
 from src.adapter.sqs import SQSAdapter
 from src.domain.services import CatalogueService
 
-DATABASE_URL = (
-    "postgresql://postgresql+psycopg2:postgres@postgres:5432/postgres"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
 QUEUE_NAME = "product-update"
 ENDPOINT_URL = "http://localstack:4566"
 REGION_NAME = "us-east-1"

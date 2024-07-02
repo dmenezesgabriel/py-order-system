@@ -8,6 +8,12 @@
 - Order Payment - DynamoDB
 - Product Search - DynamoDB
 
+## Catalogue
+
+
+
+http://localhost:8180/docs
+
 ## Glossary
 
 - SKU: Stock Keeping Unit

@@ -1,5 +1,5 @@
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from src.domain.exceptions import InvalidInventory
 
@@ -11,7 +11,7 @@ class Inventory:
         reserved: Optional[int] = 0,
         id: Optional[UUID] = None,
     ):
-        self._id = id
+        self._id = id or uuid4()
         self._quantity = self._validate_quantity(quantity)
         self._reserved = self._validate_reserved(reserved, quantity)
 
@@ -51,7 +51,7 @@ class Inventory:
 
     def to_dict(self) -> dict:
         return {
-            "id": self.id,
+            "id": str(self.id),
             "quantity": self.quantity,
             "reserved": self.reserved,
             "in_stock": self.in_stock,

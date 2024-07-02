@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException
 from src.adapter.dto import (
     InventoryDTO,
@@ -5,6 +7,7 @@ from src.adapter.dto import (
     ProductRequestDTO,
     ProductResponseDTO,
 )
+from src.config import get_config
 from src.domain.entities import Product
 from src.domain.exceptions import (
     DuplicatedProduct,
@@ -20,6 +23,9 @@ from src.domain.exceptions import (
 )
 from src.domain.services import CatalogueService
 from src.domain.value_objects import Inventory, Price
+
+config = get_config()
+logger = logging.getLogger("app")
 
 
 class HTTPAPIAdapter:
@@ -61,6 +67,7 @@ class HTTPAPIAdapter:
                 price=price,
                 inventory=inventory,
             )
+            logger.info(created_product)
             price_dto = PriceDTO(
                 value=created_product.price.value,
                 discount_percent=created_product.price.discount_percent,

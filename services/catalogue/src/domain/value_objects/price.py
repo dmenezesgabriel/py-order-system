@@ -1,5 +1,5 @@
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from src.domain.exceptions import InvalidPrice
 
@@ -11,7 +11,7 @@ class Price:
         discount_percent: float = 0,
         id: Optional[UUID] = None,
     ):
-        self._id = id
+        self._id = id or uuid4()
         self._value = self._validate_price(value)
         self._discount_percent = self._validate_discount(discount_percent)
 
@@ -51,7 +51,7 @@ class Price:
 
     def to_dict(self) -> dict:
         return {
-            "id": self.id,
+            "id": str(self.id),
             "value": self.value,
             "discount_percent": self.discount_percent,
             "discounted_price": self.discounted_price,

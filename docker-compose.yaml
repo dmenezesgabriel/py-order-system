@@ -7,15 +7,21 @@ networks:
 
 services:
   localstack:
-    image: localstack/localstack:2.2.0
+    container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
+    image: localstack/localstack:3.5.0
     ports:
       - "127.0.0.1:4566:4566"
       - "127.0.0.1:4510-4559:4510-4559"
     environment:
+      - DEFAULT_REGION=${DEFAULT_REGION-us-east-1}
+      - SERVICES=${SERVICES-lambda,s3,apigateway,cloudwatch,dynamodb,sqs,kinesis,serverless,secretsmanager}
+      - EDGE_PORT=4566
+      - DATA_DIR=${DATA_DIR-./data}:/tmp/localstack
       - DEBUG=${DEBUG-}
       - LOCALSTACK_PERSISTENCE=1
     volumes:
       - "localstack_data:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       - order-system-network
 
@@ -34,8 +40,7 @@ services:
   catalogue-migrations:
     build: services/catalogue/
     volumes:
-      - ./services/catalogue/migrations:/app/migrations
-      - ./services/catalogue/src:/app/src
+      - ./services/catalogue/:/app/
     env_file:
       - .env.template
     depends_on:
@@ -44,11 +49,15 @@ services:
     networks:
       - order-system-network
 
-  # http://localhost:8180/docs
   catalogue:
     build: services/catalogue/
+    volumes:
+      - ./services/catalogue/:/app/
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
     ports:
       - "8180:8080"
+    env_file:
+      - .env.template
     depends_on:
       - services-db
     networks:
