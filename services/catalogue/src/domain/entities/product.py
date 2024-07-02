@@ -18,8 +18,8 @@ class Product:
         description: str,
         image_url: str,
         sku: str,
-        price: Price,
-        inventory: Inventory,
+        price: Optional[Price] = None,
+        inventory: Optional[Inventory] = None,
         version: Optional[int] = None,
         id: Optional[UUID] = None,
         **kwargs

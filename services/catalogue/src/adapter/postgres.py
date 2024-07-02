@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from sqlalchemy import (
     UUID,
@@ -232,5 +231,49 @@ class ProductPostgresAdapter(ProductRepository):
         pass
 
     def delete_product(self, sku, on_not_found: Exception) -> bool:
-        """ """
-        return True
+        session = self.__session()
+        try:
+            session.begin()
+            query = select(
+                self.__product_table.c.id,
+                self.__product_table.c.inventory_id,
+                self.__product_table.c.price_id,
+            ).where(self.__product_table.c.sku == sku)
+            result = session.execute(query).fetchone()
+            if result is None:
+                raise on_not_found
+
+            product_id, inventory_id, price_id = result
+
+            delete_product_query = self.__product_table.delete().where(
+                self.__product_table.c.sku == sku
+            )
+            session.execute(delete_product_query)
+
+            if inventory_id is not None:
+                delete_inventory_query = self.__inventory_table.delete().where(
+                    self.__inventory_table.c.id == inventory_id
+                )
+                session.execute(delete_inventory_query)
+
+            if price_id is not None:
+                delete_price_query = self.__price_table.delete().where(
+                    self.__price_table.c.id == price_id
+                )
+                session.execute(delete_price_query)
+
+            session.commit()
+            return True
+        except Exception as error:
+            logger.error(error)
+            session.rollback()
+            if type(error) is type(on_not_found):
+                raise
+            raise DatabaseException(
+                {
+                    "code": "database.error.delete",
+                    "message": f"Error deleting product: {error}",
+                }
+            )
+        finally:
+            session.close()
