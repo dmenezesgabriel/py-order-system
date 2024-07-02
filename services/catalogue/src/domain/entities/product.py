@@ -11,6 +11,7 @@ from src.domain.value_objects import Inventory, Price
 
 
 class Product:
+
     def __init__(
         self,
         name: str,
@@ -21,6 +22,7 @@ class Product:
         inventory: Inventory,
         version: Optional[int] = None,
         id: Optional[UUID] = None,
+        **kwargs
     ):
 
         self._id = id or uuid4()

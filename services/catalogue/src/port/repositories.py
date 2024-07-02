@@ -6,7 +6,9 @@ from src.domain.entities.product import Product
 class ProductRepository(ABC):
     @abstractmethod
     def create_product(
-        self, product: Product, on_duplicate_sku: Exception
+        self,
+        product: Product,
+        on_duplicate_sku: Exception,
     ) -> Product:
         raise NotImplementedError
 

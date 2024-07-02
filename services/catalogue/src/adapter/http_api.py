@@ -67,24 +67,24 @@ class HTTPAPIAdapter:
                 price=price,
                 inventory=inventory,
             )
-            logger.info(created_product)
-            price_dto = PriceDTO(
-                value=created_product.price.value,
-                discount_percent=created_product.price.discount_percent,
-            )
-            inventory_dto = InventoryDTO(
-                quantity=created_product.inventory.quantity,
-                reserved=created_product.inventory.reserved,
-            )
-            return ProductResponseDTO(
-                id=created_product.id,
-                sku=created_product.sku,
-                name=created_product.name,
-                description=created_product.description,
-                image_url=created_product.image_url,
-                price=price_dto,
-                inventory=inventory_dto,
-            )
+            # price_dto = PriceDTO(
+            #     value=created_product.price.value,
+            #     discount_percent=created_product.price.discount_percent,
+            # )
+            # inventory_dto = InventoryDTO(
+            #     quantity=created_product.inventory.quantity,
+            #     reserved=created_product.inventory.reserved,
+            # )
+            # return ProductResponseDTO(
+            #     id=created_product.id,
+            #     sku=created_product.sku,
+            #     name=created_product.name,
+            #     description=created_product.description,
+            #     image_url=created_product.image_url,
+            #     price=price_dto,
+            #     inventory=inventory_dto,
+            # )
+
         except (
             InvalidSku,
             InvalidDescription,

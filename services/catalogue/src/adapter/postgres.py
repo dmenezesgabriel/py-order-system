@@ -69,7 +69,11 @@ class ProductPostgresAdapter(ProductRepository):
     def metadata(self) -> MetaData:
         return self._metadata
 
-    def create_product(self, product: Product, on_duplicate_sku: Exception):
+    def create_product(
+        self,
+        product: Product,
+        on_duplicate_sku: Exception,
+    ):
         session = self.__session()
         try:
             session.begin()
@@ -93,7 +97,7 @@ class ProductPostgresAdapter(ProductRepository):
                 inventory_result = session.execute(insert_inventory)
                 inventory_id = inventory_result.inserted_primary_key[0]
 
-            insert_product = insert(self.__product_table).values(
+            insert(self.__product_table).values(
                 id=product.id,
                 version=0,
                 sku=product.sku,
@@ -103,10 +107,8 @@ class ProductPostgresAdapter(ProductRepository):
                 price_id=price_id,
                 inventory_id=inventory_id,
             )
-            # product_result = session.execute(insert_product)
-            # product_id = product_result.inserted_primary_key[0]
             session.commit()
-
+            logger.info("Product created")
         except IntegrityError:
             session.rollback()
             raise on_duplicate_sku
@@ -149,39 +151,64 @@ class ProductPostgresAdapter(ProductRepository):
                 if result is None:
                     raise on_not_found
 
-                logger.info(result)
+                product_column_names = [
+                    column.name for column in self.__product_table.c
+                ]
+                price_column_names = [
+                    column.name for column in self.__price_table.c
+                ]
+                inventory_column_names = [
+                    column.name for column in self.__inventory_table.c
+                ]
+                product_dict = dict(
+                    zip(
+                        product_column_names,
+                        result[0 : len(product_column_names)],
+                    )
+                )
+                price_dict = dict(
+                    zip(
+                        price_column_names,
+                        result[
+                            len(product_column_names) : len(
+                                product_column_names
+                            )
+                            + len(price_column_names)
+                        ],
+                    )
+                )
+                inventory_dict = dict(
+                    zip(
+                        inventory_column_names,
+                        result[
+                            len(product_column_names)
+                            + len(price_column_names) :
+                        ],
+                    )
+                )
+                inventory = (
+                    Inventory(**inventory_dict)
+                    if inventory_dict.get("id")
+                    else None
+                )
+                price = Price(**price_dict) if price_dict.get("id") else None
+                product = Product(
+                    **product_dict, price=price, inventory=inventory
+                )
+                return product
 
-                # product_column_names = [
-                #     column.name for column in self.__product_table.c
-                # ]
-                # price_column_names = [
-                #     column.name for column in self.__price_table.c
-                # ]
-                # inventory_column_names = [
-                #     column.name for column in self.__inventory_table.c
-                # ]
-                # product_dict = dict(
-                #     zip(
-                #         product_column_names,
-                #         result[0 : len(product_column_names)],
-                #     )
-                # )
-                # price_dict = dict(
-                #     zip(
-                #         price_column_names,
-                #         result[
-                #             len(product_column_names) : len(
-                #                 product_column_names
-                #             )
-                #             + len(price_column_names)
-                #         ],
-                #     )
-                # )
-                # inventory_dict = dict(zip(
-                #     inventory_column_names, result[len]
-                # ))
+            except NoResultFound:
+                raise on_not_found
             except Exception as error:
-                pass
+                if type(error) is type(on_not_found):
+                    raise
+
+                raise DatabaseException(
+                    {
+                        "code": "database.error.select",
+                        "message": f"Error searching product by sku :{error}",
+                    }
+                )
 
     def update_product(
         self,
