@@ -22,6 +22,21 @@ class ProductRequestDTO(BaseModel):
     price: Optional[PriceDTO] = None
     inventory: Optional[InventoryDTO] = None
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "sku": "00056789",
+                    "name": "ear phones",
+                    "description": "something to put on your ears",
+                    "image_url": "http://example.com",
+                    "price": {"value": 10.0, "discount_percent": 0},
+                    "inventory": {"quantity": 10, "reserved": 0},
+                }
+            ]
+        }
+    }
+
 
 class ProductResponseDTO(BaseModel):
     id: Optional[UUID]

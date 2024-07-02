@@ -67,23 +67,23 @@ class HTTPAPIAdapter:
                 price=price,
                 inventory=inventory,
             )
-            # price_dto = PriceDTO(
-            #     value=created_product.price.value,
-            #     discount_percent=created_product.price.discount_percent,
-            # )
-            # inventory_dto = InventoryDTO(
-            #     quantity=created_product.inventory.quantity,
-            #     reserved=created_product.inventory.reserved,
-            # )
-            # return ProductResponseDTO(
-            #     id=created_product.id,
-            #     sku=created_product.sku,
-            #     name=created_product.name,
-            #     description=created_product.description,
-            #     image_url=created_product.image_url,
-            #     price=price_dto,
-            #     inventory=inventory_dto,
-            # )
+            price_dto = PriceDTO(
+                value=created_product.price.value,
+                discount_percent=created_product.price.discount_percent,
+            )
+            inventory_dto = InventoryDTO(
+                quantity=created_product.inventory.quantity,
+                reserved=created_product.inventory.reserved,
+            )
+            return ProductResponseDTO(
+                id=created_product.id,
+                sku=created_product.sku,
+                name=created_product.name,
+                description=created_product.description,
+                image_url=created_product.image_url,
+                price=price_dto,
+                inventory=inventory_dto,
+            )
 
         except (
             InvalidSku,
@@ -93,14 +93,17 @@ class HTTPAPIAdapter:
             InvalidName,
             InvalidPrice,
         ) as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=400, detail=f"Error creating product {error}"
             )
         except (ProductAlreadyExist, DuplicatedProduct) as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=409, detail=f"Error creating product {error}"
             )
         except Exception as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=500, detail=f"Error creating product: {error}"
             )
@@ -126,14 +129,17 @@ class HTTPAPIAdapter:
                 inventory=inventory,
             )
         except InvalidSku as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=400, detail=f"Error getting product: {error}"
             )
         except ProductNotFound as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=404, detail=f"Error getting product: {error}"
             )
         except Exception as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=500, detail=f"Error getting product: {error}"
             )
@@ -188,18 +194,22 @@ class HTTPAPIAdapter:
             InvalidImageUrl,
             InvalidDescription,
         ) as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=400, detail=f"Error updating product: {error}"
             )
         except ProductNotFound as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=404, detail=f"Error updating product: {error}"
             )
         except OutdatedProduct as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=409, detail=f"Error updating product: {error}"
             )
         except Exception as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=500, detail=f"Error updating product: {error}"
             )
@@ -209,14 +219,17 @@ class HTTPAPIAdapter:
             self.__catalogue_service.delete_product(sku)
             return True
         except InvalidSku as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=400, detail=f"Error deleting product: {error}"
             )
         except ProductNotFound as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=404, detail=f"Error deleting product: {error}"
             )
         except Exception as error:
+            logger.error(error)
             raise HTTPException(
                 status_code=500, detail=f"Error deleting product: {error}"
             )

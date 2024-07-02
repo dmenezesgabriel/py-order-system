@@ -1,5 +1,7 @@
+import logging
 from typing import Optional
 
+from src.config import get_config
 from src.domain.entities import Product
 from src.domain.exceptions import (
     DeleteProductError,
@@ -19,6 +21,9 @@ from src.domain.exceptions import (
 )
 from src.domain.value_objects import Inventory, Price
 from src.port import ProductEventPublisher, ProductRepository
+
+config = get_config()
+logger = logging.getLogger("app")
 
 
 class CatalogueService:
@@ -54,6 +59,9 @@ class CatalogueService:
                     on_duplicate_sku=ProductAlreadyExist(
                         "Product already exists"
                     ),
+                    on_not_found=ProductNotFound(
+                        "Product has not been created"
+                    ),
                 )
             )
             self.__product_event_publisher.publish(product=product)
@@ -66,9 +74,11 @@ class CatalogueService:
             InvalidDescription,
             InvalidImageUrl,
             ProductAlreadyExist,
-        ):
+        ) as error:
+            logger.error(error)
             raise
         except Exception as error:
+            logger.error(error)
             raise ProductCreationError(f"Error creating product: {error}")
 
     def get_product_by_sku(self, sku: str) -> Product:
@@ -80,9 +90,11 @@ class CatalogueService:
             if product is None:
                 raise ProductNotFound("Product not found")
             return product
-        except (InvalidSku, ProductNotFound):
+        except (InvalidSku, ProductNotFound) as error:
+            logger.error(error)
             raise
         except Exception as error:
+            logger.error(error)
             raise GetProductError(f"Error getting product: {error}")
 
     def update_product(
@@ -122,10 +134,11 @@ class CatalogueService:
             InvalidInventory,
             InvalidImageUrl,
             ProductNotFound,
-        ):
+        ) as error:
+            logger.error(error)
             raise
-
         except Exception as error:
+            logger.error(error)
             raise UpdateProductError(f"Error updating product {error}")
 
     def delete_product(self, sku: str) -> bool:
@@ -135,7 +148,9 @@ class CatalogueService:
                 sku=sku, on_not_found=ProductNotFound("Product not found")
             )
             return True
-        except (InvalidSku, ProductNotFound):
+        except (InvalidSku, ProductNotFound) as error:
+            logger.error(error)
             raise
         except Exception as error:
+            logger.error(error)
             raise DeleteProductError(f"Error deleting product: {error}")

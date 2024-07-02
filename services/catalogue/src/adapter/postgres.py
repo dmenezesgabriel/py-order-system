@@ -73,7 +73,8 @@ class ProductPostgresAdapter(ProductRepository):
         self,
         product: Product,
         on_duplicate_sku: Exception,
-    ):
+        on_not_found: Exception,
+    ) -> Product:
         session = self.__session()
         try:
             session.begin()
@@ -97,7 +98,8 @@ class ProductPostgresAdapter(ProductRepository):
                 inventory_result = session.execute(insert_inventory)
                 inventory_id = inventory_result.inserted_primary_key[0]
 
-            insert(self.__product_table).values(
+            logger.info("Inserting")
+            insert_product = insert(self.__product_table).values(
                 id=product.id,
                 version=0,
                 sku=product.sku,
@@ -107,12 +109,18 @@ class ProductPostgresAdapter(ProductRepository):
                 price_id=price_id,
                 inventory_id=inventory_id,
             )
+            session.execute(insert_product)
             session.commit()
-            logger.info("Product created")
-        except IntegrityError:
+            logger.info(f"Product sku {product.sku} created")
+            return self.get_product_by_sku(
+                product.sku, on_not_found=on_not_found
+            )
+        except IntegrityError as error:
+            logger.error(error)
             session.rollback()
             raise on_duplicate_sku
         except Exception as error:
+            logger.error(error)
             session.rollback()
             if type(error) is type(on_duplicate_sku):
                 raise
@@ -149,6 +157,7 @@ class ProductPostgresAdapter(ProductRepository):
             try:
                 result = connection.execute(query).fetchone()
                 if result is None:
+                    logger.error(f"Product not found for {sku}")
                     raise on_not_found
 
                 product_column_names = [
@@ -197,9 +206,11 @@ class ProductPostgresAdapter(ProductRepository):
                 )
                 return product
 
-            except NoResultFound:
+            except NoResultFound as error:
+                logger.error(error)
                 raise on_not_found
             except Exception as error:
+                logger.error(error)
                 if type(error) is type(on_not_found):
                     raise
 

@@ -9,6 +9,7 @@ class ProductRepository(ABC):
         self,
         product: Product,
         on_duplicate_sku: Exception,
+        on_not_found: Exception,
     ) -> Product:
         raise NotImplementedError
 
