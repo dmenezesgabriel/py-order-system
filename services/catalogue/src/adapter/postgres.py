@@ -227,8 +227,96 @@ class ProductPostgresAdapter(ProductRepository):
         on_outdated_version: Exception,
         on_duplicate: Exception,
     ) -> Product:
-        """ """
-        pass
+        session = self.__session()
+        try:
+            session.begin()
+            query = select(self.__product_table.c.version).where(
+                self.__product_table.c.sku == product.sku
+            )
+            result = session.execute(query).fetchone()
+
+            if result is None:
+                raise on_not_found
+            version = result[0]
+            new_version = version + 1
+
+            update_product_query = (
+                update(self.__product_table)
+                .where(
+                    self.__product_table.c.sku == product.sku,
+                    self.__product_table.c.version == version,
+                )
+                .values(
+                    name=product.name,
+                    description=product.description,
+                    image_url=product.image_url,
+                    version=new_version,
+                )
+            )
+            product_result = session.execute(update_product_query)
+
+            if product_result.rowcount == 0:
+                raise on_outdated_version
+
+            if product.price:
+                price_update_query = (
+                    update(self.__price_table)
+                    .where(
+                        self.__price_table.c.id
+                        == select(self.__product_table.c.price_id).where(
+                            self.__product_table.c.sku == product.sku
+                        )
+                    )
+                    .values(
+                        value=product.price.value,
+                        discount_percent=product.price.discount_percent,
+                    )
+                )
+                session.execute(price_update_query)
+
+            if product.inventory:
+                inventory_update_query = (
+                    update(self.__inventory_table)
+                    .where(
+                        self.__inventory_table.c.id
+                        == select(self.__product_table.c.inventory_id).where(
+                            self.__product_table.c.sku == product.sku
+                        )
+                    )
+                    .values(
+                        quantity=product.inventory.quantity,
+                        reserved=product.inventory.reserved,
+                    )
+                )
+                session.execute(inventory_update_query)
+                session.commit()
+            return self.get_product_by_sku(
+                sku=product.sku, on_not_found=on_not_found
+            )
+        except IntegrityError as error:
+            session.rollback()
+            if error.orig.args[0] == 1062:
+                raise on_duplicate
+            elif error.orig.args[0] == 1452:
+                raise on_not_found
+            logger.error(f"SQL Error code: {error.orig.args[0]}")
+            raise
+        except Exception as error:
+            session.rollback()
+            if (
+                type(error) is type(on_not_found)
+                or type(error) is type(on_outdated_version)
+                or type(error) is type(on_duplicate)
+            ):
+                raise
+            raise DatabaseException(
+                {
+                    "code": "database.error.update",
+                    "message": f"Error updating the product: {error}",
+                }
+            )
+        finally:
+            session.close()
 
     def delete_product(self, sku, on_not_found: Exception) -> bool:
         session = self.__session()
