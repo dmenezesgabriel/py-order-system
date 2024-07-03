@@ -16,8 +16,8 @@ class Product:
         self,
         name: str,
         description: str,
-        image_url: str,
         sku: str,
+        image_url: Optional[str] = None,
         price: Optional[Price] = None,
         inventory: Optional[Inventory] = None,
         version: Optional[int] = None,
@@ -61,7 +61,9 @@ class Product:
         return description
 
     @staticmethod
-    def validate_image_url(image_url: str) -> str:
+    def validate_image_url(image_url: Optional[str]) -> Optional[str]:
+        if not image_url:
+            return None
         if not image_url.startswith("http://") and not image_url.startswith(
             "https://"
         ):
@@ -89,15 +91,15 @@ class Product:
         return self._description
 
     @property
-    def image_url(self) -> str:
+    def image_url(self) -> Optional[str]:
         return self._image_url
 
     @property
-    def price(self) -> Price:
+    def price(self) -> Optional[Price]:
         return self._price
 
     @property
-    def inventory(self) -> Inventory:
+    def inventory(self) -> Optional[Inventory]:
         return self._inventory
 
     def to_dict(self) -> dict:
@@ -108,6 +110,6 @@ class Product:
             "name": self.name,
             "description": self.description,
             "image_url": self.image_url,
-            "price": self.price.to_dict(),
-            "inventory": (self.inventory.to_dict()),
+            "price": self.price.to_dict() if self.price else None,
+            "inventory": self.inventory.to_dict() if self.inventory else None,
         }

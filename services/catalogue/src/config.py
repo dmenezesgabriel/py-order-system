@@ -7,6 +7,12 @@ from src.utils.singleton import Singleton
 
 class Config(metaclass=Singleton):
     LOG_LEVEL = "DEBUG"
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    QUEUE_NAME = os.getenv("QUEUE_NAME")
+    ENDPOINT_URL = os.getenv("ENDPOINT_URL")
+    REGION_NAME = os.getenv("REGION_NAME")
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
 
 class LocalConfig(Config):

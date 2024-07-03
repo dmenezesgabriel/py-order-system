@@ -10,7 +10,6 @@ from sqlalchemy import (
     String,
     Table,
     Text,
-    UniqueConstraint,
     create_engine,
     insert,
     select,
@@ -86,6 +85,8 @@ class ProductPostgresAdapter(ProductRepository):
                     discount_percent=product.price.discount_percent,
                 )
                 price_result = session.execute(insert_price)
+                if not hasattr(price_result, "inserted_primary_key"):
+                    raise on_not_found
                 price_id = price_result.inserted_primary_key[0]
 
             if product.inventory:
@@ -95,6 +96,8 @@ class ProductPostgresAdapter(ProductRepository):
                     reserved=product.inventory.reserved,
                 )
                 inventory_result = session.execute(insert_inventory)
+                if not hasattr(inventory_result, "inserted_primary_key"):
+                    raise on_not_found
                 inventory_id = inventory_result.inserted_primary_key[0]
 
             logger.info("Inserting")
@@ -255,7 +258,10 @@ class ProductPostgresAdapter(ProductRepository):
             )
             product_result = session.execute(update_product_query)
 
-            if product_result.rowcount == 0:
+            if (
+                hasattr(product_result, "rowcount")
+                and product_result.rowcount == 0
+            ):
                 raise on_outdated_version
 
             if product.price:
@@ -295,11 +301,14 @@ class ProductPostgresAdapter(ProductRepository):
             )
         except IntegrityError as error:
             session.rollback()
-            if error.orig.args[0] == 1062:
+            error_orig = error.orig
+            if not error_orig:
+                raise
+            if error_orig and error_orig.args[0] == 1062:
                 raise on_duplicate
-            elif error.orig.args[0] == 1452:
+            elif error_orig and error_orig.args[0] == 1452:
                 raise on_not_found
-            logger.error(f"SQL Error code: {error.orig.args[0]}")
+            logger.error(f"SQL Error code: {error_orig.args[0]}")
             raise
         except Exception as error:
             session.rollback()

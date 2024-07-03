@@ -40,9 +40,9 @@ class CatalogueService:
         sku: str,
         name: str,
         description: str,
-        image_url: Optional[str],
         price: Price,
         inventory: Inventory,
+        image_url: Optional[str] = None,
     ) -> Product:
         try:
             product = Product(
