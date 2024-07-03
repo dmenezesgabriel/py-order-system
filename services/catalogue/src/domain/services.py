@@ -19,7 +19,7 @@ from src.domain.exceptions import (
     ProductNotFound,
     UpdateProductError,
 )
-from src.domain.value_objects import Inventory, Price
+from src.domain.value_objects import Category, Inventory, Price
 from src.port import ProductEventPublisher, ProductRepository
 
 config = get_config()
@@ -40,8 +40,9 @@ class CatalogueService:
         sku: str,
         name: str,
         description: str,
-        price: Price,
-        inventory: Inventory,
+        price: Optional[Price] = None,
+        inventory: Optional[Inventory] = None,
+        category: Optional[Category] = None,
         image_url: Optional[str] = None,
     ) -> Product:
         try:
@@ -52,6 +53,7 @@ class CatalogueService:
                 image_url=image_url,
                 price=price,
                 inventory=inventory,
+                category=category,
             )
             created_product: Product = (
                 self.__product_repository.create_product(
@@ -102,9 +104,10 @@ class CatalogueService:
         sku: str,
         name: str,
         description: str,
-        image_url: Optional[str],
-        price: Price,
-        inventory: Inventory,
+        image_url: Optional[str] = None,
+        price: Optional[Price] = None,
+        inventory: Optional[Inventory] = None,
+        category: Optional[Category] = None,
     ) -> Product:
         try:
             product = Product(
@@ -114,6 +117,7 @@ class CatalogueService:
                 image_url=image_url,
                 price=price,
                 inventory=inventory,
+                category=category,
             )
             updated_product: Product = (
                 self.__product_repository.update_product(

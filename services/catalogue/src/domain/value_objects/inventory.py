@@ -10,7 +10,7 @@ class Inventory:
         quantity: int,
         reserved: Optional[int] = 0,
         id: Optional[UUID] = None,
-    ):
+    ) -> None:
         self._id = id or uuid4()
         self._quantity = self._validate_quantity(quantity)
         self._reserved = self._validate_reserved(reserved, quantity)

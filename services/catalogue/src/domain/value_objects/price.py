@@ -10,7 +10,7 @@ class Price:
         value: float,
         discount_percent: float = 0,
         id: Optional[UUID] = None,
-    ):
+    ) -> None:
         self._id = id or uuid4()
         self._value = self._validate_price(value)
         self._discount_percent = self._validate_discount(discount_percent)

@@ -14,6 +14,10 @@ class PriceDTO(BaseModel):
     discount_percent: float
 
 
+class CategoryDTO(BaseModel):
+    name: str
+
+
 class ProductRequestDTO(BaseModel):
     sku: str
     name: str
@@ -21,6 +25,7 @@ class ProductRequestDTO(BaseModel):
     image_url: Optional[str] = None
     price: Optional[PriceDTO] = None
     inventory: Optional[InventoryDTO] = None
+    category: Optional[CategoryDTO] = None
 
     model_config = {
         "json_schema_extra": {
@@ -32,6 +37,7 @@ class ProductRequestDTO(BaseModel):
                     "image_url": "http://example.com",
                     "price": {"value": 10.0, "discount_percent": 0},
                     "inventory": {"quantity": 10, "reserved": 0},
+                    "category": {"name": "electronics"},
                 }
             ]
         }
@@ -46,3 +52,4 @@ class ProductResponseDTO(BaseModel):
     image_url: Optional[str] = None
     price: Optional[PriceDTO] = None
     inventory: Optional[InventoryDTO] = None
+    category: Optional[CategoryDTO] = None

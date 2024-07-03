@@ -20,7 +20,7 @@ from sqlalchemy.orm import sessionmaker
 from src.adapter.exceptions import DatabaseException
 from src.config import get_config
 from src.domain.entities import Product
-from src.domain.value_objects import Inventory, Price
+from src.domain.value_objects import Category, Inventory, Price
 from src.port.repositories import ProductRepository
 
 config = get_config()
@@ -46,6 +46,13 @@ class ProductPostgresAdapter(ProductRepository):
             Column("id", UUID, primary_key=True),
             Column("value", Float, nullable=False),
             Column("discount_percent", Float, nullable=False),
+        )
+
+        self.__category_table = Table(
+            "Category",
+            self._metadata,
+            Column("id", UUID, primary_key=True),
+            Column("name", String(255), nullable=False, unique=True),
         )
 
         self.__product_table = Table(
@@ -78,6 +85,7 @@ class ProductPostgresAdapter(ProductRepository):
             session.begin()
             price_id = None
             inventory_id = None
+            category_id = None
             if product.price:
                 insert_price = insert(self.__price_table).values(
                     id=product.price.id,
@@ -100,6 +108,20 @@ class ProductPostgresAdapter(ProductRepository):
                     raise on_not_found
                 inventory_id = inventory_result.inserted_primary_key[0]
 
+            if product.category:
+                get_category = select(self.__category_table.c.id).where(
+                    self.__category_table.c.name == product.category.name
+                )
+                category_id = session.execute(get_category).fetchone()
+                if category_id is None:
+                    insert_category = insert(self.__category_table).values(
+                        name=product.category.name
+                    )
+                    category_result = session.execute(insert_category)
+                    if not hasattr(category_result, "inserted_primary_key"):
+                        raise on_not_found
+                    category_id = category_result.inserted_primary_key[0]
+
             logger.info("Inserting")
             insert_product = insert(self.__product_table).values(
                 id=product.id,
@@ -110,6 +132,7 @@ class ProductPostgresAdapter(ProductRepository):
                 image_url=product.image_url,
                 price_id=price_id,
                 inventory_id=inventory_id,
+                category_id=category_id,
             )
             session.execute(insert_product)
             session.commit()
@@ -141,15 +164,22 @@ class ProductPostgresAdapter(ProductRepository):
                 self.__product_table,
                 self.__price_table,
                 self.__inventory_table,
+                self.__category_table,
             )
             .select_from(
                 self.__product_table.outerjoin(
                     self.__price_table,
                     self.__product_table.c.price_id == self.__price_table.c.id,
-                ).outerjoin(
+                )
+                .outerjoin(
                     self.__inventory_table,
                     self.__product_table.c.inventory_id
                     == self.__inventory_table.c.id,
+                )
+                .outerjoin(
+                    self.__category_table,
+                    self.__product_table.c.category_id
+                    == self.__category_table.c.id,
                 )
             )
             .where(self.__product_table.c.sku == sku)
@@ -171,6 +201,10 @@ class ProductPostgresAdapter(ProductRepository):
                 inventory_column_names = [
                     column.name for column in self.__inventory_table.c
                 ]
+                category_column_names = [
+                    column.name for column in self.__category_table.c
+                ]
+
                 product_dict = dict(
                     zip(
                         product_column_names,
@@ -193,7 +227,26 @@ class ProductPostgresAdapter(ProductRepository):
                         inventory_column_names,
                         result[
                             len(product_column_names)
-                            + len(price_column_names) :
+                            + len(price_column_names) : len(
+                                product_column_names
+                            )
+                            + len(price_column_names)
+                            + len(inventory_column_names)
+                        ],
+                    )
+                )
+                category_dict = dict(
+                    zip(
+                        category_column_names,
+                        result[
+                            len(product_column_names)
+                            + len(price_column_names)
+                            + len(inventory_column_names) : len(
+                                product_column_names
+                            )
+                            + len(price_column_names)
+                            + len(inventory_column_names)
+                            + len(category_column_names)
                         ],
                     )
                 )
@@ -203,8 +256,16 @@ class ProductPostgresAdapter(ProductRepository):
                     else None
                 )
                 price = Price(**price_dict) if price_dict.get("id") else None
+                category = (
+                    Category(**category_dict)
+                    if category_dict.get("id")
+                    else None
+                )
                 product = Product(
-                    **product_dict, price=price, inventory=inventory
+                    **product_dict,
+                    price=price,
+                    inventory=inventory,
+                    category=category,
                 )
                 return product
 

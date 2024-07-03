@@ -7,7 +7,7 @@ from src.domain.exceptions import (
     InvalidName,
     InvalidSku,
 )
-from src.domain.value_objects import Inventory, Price
+from src.domain.value_objects import Category, Inventory, Price
 
 
 class Product:
@@ -20,10 +20,11 @@ class Product:
         image_url: Optional[str] = None,
         price: Optional[Price] = None,
         inventory: Optional[Inventory] = None,
+        category: Optional[Category] = None,
         version: Optional[int] = None,
         id: Optional[UUID] = None,
         **kwargs
-    ):
+    ) -> None:
 
         self._id = id or uuid4()
         self._version = version
@@ -33,6 +34,7 @@ class Product:
         self._image_url = self.validate_image_url(image_url)
         self._price = price
         self._inventory = inventory
+        self._category = category
 
     @staticmethod
     def validate_sku(sku: str) -> str:
@@ -102,6 +104,10 @@ class Product:
     def inventory(self) -> Optional[Inventory]:
         return self._inventory
 
+    @property
+    def category(self) -> Optional[Category]:
+        return self._category
+
     def to_dict(self) -> dict:
         return {
             "id": str(self.id),
@@ -112,4 +118,5 @@ class Product:
             "image_url": self.image_url,
             "price": self.price.to_dict() if self.price else None,
             "inventory": self.inventory.to_dict() if self.inventory else None,
+            "category": self.category.to_dict() if self.category else None,
         }
