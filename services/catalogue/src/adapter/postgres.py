@@ -30,7 +30,7 @@ logger = logging.getLogger("app")
 class ProductPostgresAdapter(ProductRepository):
     def __init__(self, database_url) -> None:
         self.__engine = create_engine(database_url)
-        self._metadata = MetaData()
+        self._metadata = MetaData(schema="catalogue")
 
         self.__inventory_table = Table(
             "Inventory",
@@ -356,7 +356,19 @@ class ProductPostgresAdapter(ProductRepository):
                     )
                 )
                 session.execute(inventory_update_query)
-                session.commit()
+            if product.category:
+                category_update_query = (
+                    update(self.__category_table)
+                    .where(
+                        self.__category_table.c.id
+                        == select(self.__product_table.c.category_id).where(
+                            self.__product_table.c.sku == product.sku
+                        )
+                    )
+                    .values(name=product.category.name)
+                )
+                session.execute(category_update_query)
+            session.commit()
             return self.get_product_by_sku(
                 sku=product.sku, on_not_found=on_not_found
             )
@@ -396,12 +408,13 @@ class ProductPostgresAdapter(ProductRepository):
                 self.__product_table.c.id,
                 self.__product_table.c.inventory_id,
                 self.__product_table.c.price_id,
+                self.__product_table.c.category_id,
             ).where(self.__product_table.c.sku == sku)
             result = session.execute(query).fetchone()
             if result is None:
                 raise on_not_found
 
-            product_id, inventory_id, price_id = result
+            product_id, inventory_id, price_id, category_id = result
 
             delete_product_query = self.__product_table.delete().where(
                 self.__product_table.c.sku == sku
@@ -420,6 +433,11 @@ class ProductPostgresAdapter(ProductRepository):
                 )
                 session.execute(delete_price_query)
 
+            if category_id is not None:
+                delete_category_query = self.__category_table.delete().where(
+                    self.__category_table.c.id == category_id
+                )
+                session.execute(delete_category_query)
             session.commit()
             return True
         except Exception as error:

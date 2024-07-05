@@ -10,8 +10,6 @@
 
 ## Catalogue
 
-
-
 http://localhost:8180/docs
 
 ## Glossary
@@ -43,6 +41,10 @@ psql -U postgres
 ```sh
 SELECT schema_name
 FROM information_schema.schemata;
+```
+
+```sh
+\dt catalogue.*
 ```
 
 ## Resources
