@@ -66,6 +66,7 @@ class ProductPostgresAdapter(ProductRepository):
             Column("image_url", String(255), nullable=False),
             Column("price_id", UUID, ForeignKey("Price.id")),
             Column("inventory_id", UUID, ForeignKey("Inventory.id")),
+            Column("category_id", UUID, ForeignKey("Category.id")),
         )
 
         self.__session = sessionmaker(autocommit=False, bind=self.__engine)
@@ -115,7 +116,7 @@ class ProductPostgresAdapter(ProductRepository):
                 category_id = session.execute(get_category).fetchone()
                 if category_id is None:
                     insert_category = insert(self.__category_table).values(
-                        name=product.category.name
+                        id=product.category.id, name=product.category.name
                     )
                     category_result = session.execute(insert_category)
                     if not hasattr(category_result, "inserted_primary_key"):
