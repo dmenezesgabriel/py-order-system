@@ -27,6 +27,7 @@ services:
 
   postgres-db:
     image: postgres:16.0-alpine
+    hostname: postgres-db
     ports:
       - "5432:5432"
     env_file:
@@ -34,6 +35,18 @@ services:
     volumes:
       - db_services_data:/var/lib/postgresql/data
       - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - order-system-network
+
+  mongo-db:
+    image: mongo:8.0.0-rc11-jammy
+    hostname: mongo-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    env_file:
+      - .env.template
     networks:
       - order-system-network
 
@@ -63,23 +76,19 @@ services:
     networks:
       - order-system-network
 
-  # pricing:
-  #   build: services/pricing/
-  #   ports:
-  #     - "8182:8080"
-  #   depends_on:
-  #     - postgres-db
-  #   networks:
-  #     - order-system-network
-
-  # product-search:
-  #   build: services/product-search/
-  #   ports:
-  #     - "8183:8080"
-  #   depends_on:
-  #     - postgres-db
-  #   networks:
-  #     - order-system-network
+  product-search:
+    build: services/product-search/
+    volumes:
+      - ./services/product-search/:/app/
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
+    ports:
+      - "8181:8080"
+    env_file:
+      - .env.template
+    depends_on:
+      - postgres-db
+    networks:
+      - order-system-network
 
   # order:
   #   build: services/order/
