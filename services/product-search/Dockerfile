@@ -61,8 +61,6 @@ WORKDIR /app
 COPY ./src /app/src
 COPY ./src/main.py /app/src/main.py
 
-COPY ./migrations /app/migrations
-
 # chown all the files to the app user
 RUN chown -R app:app /app/
 

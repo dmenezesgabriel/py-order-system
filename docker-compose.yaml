@@ -1,6 +1,8 @@
 volumes:
   db_services_data:
+  mongo_data:
   localstack_data:
+
 networks:
   order-system-network:
     external: false
@@ -17,7 +19,7 @@ services:
       - SERVICES=${SERVICES-lambda,s3,apigateway,cloudwatch,dynamodb,sqs,kinesis,serverless,secretsmanager}
       - EDGE_PORT=4566
       - DATA_DIR=${DATA_DIR-./data}:/tmp/localstack
-      - DEBUG=${DEBUG-}
+      - DEBUG=${DEBUG-}message_handler_service
       - LOCALSTACK_PERSISTENCE=1
     volumes:
       - "localstack_data:/var/lib/localstack"
@@ -86,7 +88,7 @@ services:
     env_file:
       - .env.template
     depends_on:
-      - postgres-db
+      - mongo-db
     networks:
       - order-system-network
 

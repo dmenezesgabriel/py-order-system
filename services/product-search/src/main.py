@@ -1,33 +1,155 @@
-from fastapi import FastAPI
+import logging
+import threading
+import time
+from typing import Any, Dict, List, Optional, Union
+
+import boto3
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from pymongo import MongoClient
-from src.adapter.http_api import HTTPAPIAdapter
-from src.adapter.mongo import ProductMongoAdapter
-from src.adapter.sqs import SQSAdapter
 from src.config import get_config
-from src.domain.services import MessageHandler, SearchService
 
 config = get_config()
+logger = logging.getLogger("app")
 
 app = FastAPI()
 
+client = MongoClient(config.MONGO_URL)
+db = client.busca_produto
+produto_collection = db.produto
+
+
+class Price(BaseModel):
+    value: float
+    discount_percent: float
+
+
+class Inventory(BaseModel):
+    quantity: int
+    reserved: Optional[int] = 0
+
+
+class Category(BaseModel):
+    name: str
+
+
+class Product(BaseModel):
+    sku: str
+    name: str
+    description: str
+    image_url: str
+    price: Optional[Price] = None
+    inventory: Optional[Inventory] = None
+    category: Optional[Category] = None
+
+
+sqs = boto3.client(
+    "sqs",
+    endpoint_url=config.ENDPOINT_URL,
+    region_name=config.REGION_NAME,
+    aws_access_key_id=config.AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=config.AWS_SECRET_ACCESS_KEY,
+)
+queues = {
+    "product-update": "http://localstack:4566/000000000000/product-update",
+}
+
+
+def handle_sqs_message(queue_name, queue_url):
+    while True:
+        try:
+            messages = sqs.receive_message(
+                QueueUrl=queue_url, MaxNumberOfMessages=10
+            )
+
+            if "Messages" in messages:
+                for message in messages["Messages"]:
+                    process_message(message, queue_name)
+                    sqs.delete_message(
+                        QueueUrl=queue_url,
+                        ReceiptHandle=message["ReceiptHandle"],
+                    )
+
+            time.sleep(5)
+
+        except Exception as e:
+            print(f"Error processing message for queue {queue_name}: {str(e)}")
+            time.sleep(10)
+
+
+def process_message(message, queue_name):
+    data = message["Body"]
+    try:
+        if queue_name == "product-update":
+            product = Product.parse_raw(data)
+            produto_collection.update_one(
+                {"sku": product.sku},
+                {
+                    "$set": {
+                        "name": product.name,
+                        "description": product.description,
+                        "image_url": product.image_url,
+                        "price": {
+                            "value": product.price.value,
+                            "discount_percent": product.price.discount_percent,
+                        },
+                        "inventory": {
+                            "quantity": product.inventory.quantity,
+                            "reserved": product.inventory.reserved,
+                        },
+                        "category": {"name": product.category.name},
+                    }
+                },
+                upsert=True,
+            )
+    except Exception as error:
+        logger.error(error)
+        raise
+
+
+@app.get("/product/{sku}")
+def get_product_by_sku(sku: str):
+    try:
+        result = produto_collection.find_one({"sku": sku})
+        if result is None:
+            raise HTTPException(
+                status_code=404, detail="Produto não encontrado"
+            )
+        return Product(**result)
+    except Exception as error:
+        logger.error(error)
+        raise HTTPException(status_code=500, detail="Erro ao buscar produto")
+
+
+@app.get("/product")
+def get_product_by_params(
+    sku: Optional[str] = None,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+) -> List[Product]:
+    query: Dict[str, Union[str, Dict[str, Any]]] = {}
+    if sku:
+        query["sku"] = sku
+    if name:
+        query["name"] = {"$regex": name, "$options": "i"}
+    if description:
+        query["description"] = {"$regex": description, "$options": "i"}
+
+    try:
+        result = list(produto_collection.find(query))
+        if not result:
+            raise HTTPException(
+                status_code=204, detail="Produtos não encontrados na busca"
+            )
+        return [Product(**prod) for prod in result]
+    except Exception as error:
+        logger.error(error)
+        raise HTTPException(status_code=500, detail="Erro ao buscar produtos")
+
 
 @app.on_event("startup")
-async def startup_event():
-    client = MongoClient(config.DATABASE_URL)
-    product_mongo_adapter = ProductMongoAdapter(
-        client=client,
-        db_name="product-search",
-        collection_name="product-collection",
-    )
-    sqs_adapter = SQSAdapter(
-        queue_name=config.QUEUE_NAME,
-        aws_access_key_id=config.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=config.AWS_SECRET_ACCESS_KEY,
-        endpoint_url=config.ENDPOINT_URL,
-        region_name=config.REGION_NAME,
-    )
-    catalogue_service = SearchService(
-        product_repository=product_mongo_adapter,
-    )
-    http_api_adapter = HTTPAPIAdapter(catalogue_service=catalogue_service)
-    app.include_router(http_api_adapter.router)
+def start_sqs_handlers():
+    for queue_name, queue_url in queues.items():
+        threading.Thread(
+            target=handle_sqs_message, args=(queue_name, queue_url)
+        ).start()

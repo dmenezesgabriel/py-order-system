@@ -7,3 +7,6 @@ create-catalogue-migration: |
 
 apply-catalogue-migrations: |
 	docker compose run --rm catalogue-migrations
+
+init-postgres: |
+	docker compose up postgres-db
