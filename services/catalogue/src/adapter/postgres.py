@@ -113,7 +113,10 @@ class ProductPostgresAdapter(ProductRepository):
                 get_category = select(self.__category_table.c.id).where(
                     self.__category_table.c.name == product.category.name
                 )
-                category_id = session.execute(get_category).fetchone()
+                category_id = None
+                category_result = session.execute(get_category).fetchone()
+                if category_result:
+                    category_id = category_result[0]
                 if category_id is None:
                     insert_category = insert(self.__category_table).values(
                         id=product.category.id, name=product.category.name

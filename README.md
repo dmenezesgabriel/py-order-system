@@ -21,7 +21,7 @@ http://localhost:8180/docs
 - **List Schemas**:
 
 ```sh
-docker compose exec services-db /bin/bash
+docker compose exec postgres-db /bin/bash
 ```
 
 ```sh
