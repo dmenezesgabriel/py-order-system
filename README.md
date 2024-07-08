@@ -10,8 +10,6 @@
 
 ## Catalogue
 
-
-
 http://localhost:8180/docs
 
 ## Glossary
@@ -23,7 +21,7 @@ http://localhost:8180/docs
 - **List Schemas**:
 
 ```sh
-docker compose exec services-db /bin/bash
+docker compose exec postgres-db /bin/bash
 ```
 
 ```sh
@@ -43,6 +41,10 @@ psql -U postgres
 ```sh
 SELECT schema_name
 FROM information_schema.schemata;
+```
+
+```sh
+\dt catalogue.*
 ```
 
 ## Resources

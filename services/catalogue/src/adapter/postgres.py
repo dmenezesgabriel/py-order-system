@@ -20,7 +20,7 @@ from sqlalchemy.orm import sessionmaker
 from src.adapter.exceptions import DatabaseException
 from src.config import get_config
 from src.domain.entities import Product
-from src.domain.value_objects import Inventory, Price
+from src.domain.value_objects import Category, Inventory, Price
 from src.port.repositories import ProductRepository
 
 config = get_config()
@@ -30,7 +30,7 @@ logger = logging.getLogger("app")
 class ProductPostgresAdapter(ProductRepository):
     def __init__(self, database_url) -> None:
         self.__engine = create_engine(database_url)
-        self._metadata = MetaData()
+        self._metadata = MetaData(schema="catalogue")
 
         self.__inventory_table = Table(
             "Inventory",
@@ -48,6 +48,13 @@ class ProductPostgresAdapter(ProductRepository):
             Column("discount_percent", Float, nullable=False),
         )
 
+        self.__category_table = Table(
+            "Category",
+            self._metadata,
+            Column("id", UUID, primary_key=True),
+            Column("name", String(255), nullable=False, unique=True),
+        )
+
         self.__product_table = Table(
             "Product",
             self._metadata,
@@ -59,6 +66,7 @@ class ProductPostgresAdapter(ProductRepository):
             Column("image_url", String(255), nullable=False),
             Column("price_id", UUID, ForeignKey("Price.id")),
             Column("inventory_id", UUID, ForeignKey("Inventory.id")),
+            Column("category_id", UUID, ForeignKey("Category.id")),
         )
 
         self.__session = sessionmaker(autocommit=False, bind=self.__engine)
@@ -78,6 +86,7 @@ class ProductPostgresAdapter(ProductRepository):
             session.begin()
             price_id = None
             inventory_id = None
+            category_id = None
             if product.price:
                 insert_price = insert(self.__price_table).values(
                     id=product.price.id,
@@ -100,6 +109,23 @@ class ProductPostgresAdapter(ProductRepository):
                     raise on_not_found
                 inventory_id = inventory_result.inserted_primary_key[0]
 
+            if product.category:
+                get_category = select(self.__category_table.c.id).where(
+                    self.__category_table.c.name == product.category.name
+                )
+                category_id = None
+                category_result = session.execute(get_category).fetchone()
+                if category_result:
+                    category_id = category_result[0]
+                if category_id is None:
+                    insert_category = insert(self.__category_table).values(
+                        id=product.category.id, name=product.category.name
+                    )
+                    category_result = session.execute(insert_category)
+                    if not hasattr(category_result, "inserted_primary_key"):
+                        raise on_not_found
+                    category_id = category_result.inserted_primary_key[0]
+
             logger.info("Inserting")
             insert_product = insert(self.__product_table).values(
                 id=product.id,
@@ -110,6 +136,7 @@ class ProductPostgresAdapter(ProductRepository):
                 image_url=product.image_url,
                 price_id=price_id,
                 inventory_id=inventory_id,
+                category_id=category_id,
             )
             session.execute(insert_product)
             session.commit()
@@ -141,15 +168,22 @@ class ProductPostgresAdapter(ProductRepository):
                 self.__product_table,
                 self.__price_table,
                 self.__inventory_table,
+                self.__category_table,
             )
             .select_from(
                 self.__product_table.outerjoin(
                     self.__price_table,
                     self.__product_table.c.price_id == self.__price_table.c.id,
-                ).outerjoin(
+                )
+                .outerjoin(
                     self.__inventory_table,
                     self.__product_table.c.inventory_id
                     == self.__inventory_table.c.id,
+                )
+                .outerjoin(
+                    self.__category_table,
+                    self.__product_table.c.category_id
+                    == self.__category_table.c.id,
                 )
             )
             .where(self.__product_table.c.sku == sku)
@@ -171,6 +205,10 @@ class ProductPostgresAdapter(ProductRepository):
                 inventory_column_names = [
                     column.name for column in self.__inventory_table.c
                 ]
+                category_column_names = [
+                    column.name for column in self.__category_table.c
+                ]
+
                 product_dict = dict(
                     zip(
                         product_column_names,
@@ -193,7 +231,26 @@ class ProductPostgresAdapter(ProductRepository):
                         inventory_column_names,
                         result[
                             len(product_column_names)
-                            + len(price_column_names) :
+                            + len(price_column_names) : len(
+                                product_column_names
+                            )
+                            + len(price_column_names)
+                            + len(inventory_column_names)
+                        ],
+                    )
+                )
+                category_dict = dict(
+                    zip(
+                        category_column_names,
+                        result[
+                            len(product_column_names)
+                            + len(price_column_names)
+                            + len(inventory_column_names) : len(
+                                product_column_names
+                            )
+                            + len(price_column_names)
+                            + len(inventory_column_names)
+                            + len(category_column_names)
                         ],
                     )
                 )
@@ -203,8 +260,16 @@ class ProductPostgresAdapter(ProductRepository):
                     else None
                 )
                 price = Price(**price_dict) if price_dict.get("id") else None
+                category = (
+                    Category(**category_dict)
+                    if category_dict.get("id")
+                    else None
+                )
                 product = Product(
-                    **product_dict, price=price, inventory=inventory
+                    **product_dict,
+                    price=price,
+                    inventory=inventory,
+                    category=category,
                 )
                 return product
 
@@ -295,7 +360,19 @@ class ProductPostgresAdapter(ProductRepository):
                     )
                 )
                 session.execute(inventory_update_query)
-                session.commit()
+            if product.category:
+                category_update_query = (
+                    update(self.__category_table)
+                    .where(
+                        self.__category_table.c.id
+                        == select(self.__product_table.c.category_id).where(
+                            self.__product_table.c.sku == product.sku
+                        )
+                    )
+                    .values(name=product.category.name)
+                )
+                session.execute(category_update_query)
+            session.commit()
             return self.get_product_by_sku(
                 sku=product.sku, on_not_found=on_not_found
             )
@@ -335,12 +412,13 @@ class ProductPostgresAdapter(ProductRepository):
                 self.__product_table.c.id,
                 self.__product_table.c.inventory_id,
                 self.__product_table.c.price_id,
+                self.__product_table.c.category_id,
             ).where(self.__product_table.c.sku == sku)
             result = session.execute(query).fetchone()
             if result is None:
                 raise on_not_found
 
-            product_id, inventory_id, price_id = result
+            product_id, inventory_id, price_id, category_id = result
 
             delete_product_query = self.__product_table.delete().where(
                 self.__product_table.c.sku == sku
@@ -359,6 +437,11 @@ class ProductPostgresAdapter(ProductRepository):
                 )
                 session.execute(delete_price_query)
 
+            if category_id is not None:
+                delete_category_query = self.__category_table.delete().where(
+                    self.__category_table.c.id == category_id
+                )
+                session.execute(delete_category_query)
             session.commit()
             return True
         except Exception as error:

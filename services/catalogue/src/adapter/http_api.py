@@ -2,6 +2,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 from src.adapter.dto import (
+    CategoryDTO,
     InventoryDTO,
     PriceDTO,
     ProductRequestDTO,
@@ -22,7 +23,7 @@ from src.domain.exceptions import (
     ProductNotFound,
 )
 from src.domain.services import CatalogueService
-from src.domain.value_objects import Inventory, Price
+from src.domain.value_objects import Category, Inventory, Price
 
 config = get_config()
 logger = logging.getLogger("app")
@@ -49,6 +50,7 @@ class HTTPAPIAdapter:
         try:
             inventory = None
             price = None
+            category = None
             if product.inventory is not None:
                 inventory = Inventory(
                     quantity=product.inventory.quantity,
@@ -59,6 +61,10 @@ class HTTPAPIAdapter:
                     value=product.price.value,
                     discount_percent=product.price.discount_percent,
                 )
+
+            if product.category is not None:
+                category = Category(name=product.category.name)
+
             created_product: Product = self.__catalogue_service.create_product(
                 sku=product.sku,
                 name=product.name,
@@ -66,15 +72,25 @@ class HTTPAPIAdapter:
                 image_url=product.image_url,
                 price=price,
                 inventory=inventory,
+                category=category,
             )
-            price_dto = PriceDTO(
-                value=created_product.price.value,
-                discount_percent=created_product.price.discount_percent,
-            )
-            inventory_dto = InventoryDTO(
-                quantity=created_product.inventory.quantity,
-                reserved=created_product.inventory.reserved,
-            )
+
+            inventory_dto = None
+            price_dto = None
+            category_dto = None
+            if created_product.price:
+                price_dto = PriceDTO(
+                    value=created_product.price.value,
+                    discount_percent=created_product.price.discount_percent,
+                )
+            if created_product.inventory:
+                inventory_dto = InventoryDTO(
+                    quantity=created_product.inventory.quantity,
+                    reserved=created_product.inventory.reserved,
+                )
+            if created_product.category:
+                category_dto = CategoryDTO(name=created_product.category.name)
+
             return ProductResponseDTO(
                 id=created_product.id,
                 sku=created_product.sku,
@@ -83,6 +99,7 @@ class HTTPAPIAdapter:
                 image_url=created_product.image_url,
                 price=price_dto,
                 inventory=inventory_dto,
+                category=category_dto,
             )
 
         except (
@@ -111,14 +128,21 @@ class HTTPAPIAdapter:
     def get_product_by_sku(self, sku: str) -> ProductResponseDTO:
         try:
             product = self.__catalogue_service.get_product_by_sku(sku=sku)
-            price = PriceDTO(
-                value=product.price.value,
-                discount_percent=product.price.discount_percent,
-            )
-            inventory = InventoryDTO(
-                quantity=product.inventory.quantity,
-                reserved=product.inventory.reserved,
-            )
+            price = None
+            inventory = None
+            category = None
+            if product.price:
+                price = PriceDTO(
+                    value=product.price.value,
+                    discount_percent=product.price.discount_percent,
+                )
+            if product.inventory:
+                inventory = InventoryDTO(
+                    quantity=product.inventory.quantity,
+                    reserved=product.inventory.reserved,
+                )
+            if product.category:
+                category = CategoryDTO(name=product.category.name)
             return ProductResponseDTO(
                 id=product.id,
                 sku=product.sku,
@@ -127,6 +151,7 @@ class HTTPAPIAdapter:
                 image_url=product.image_url,
                 price=price,
                 inventory=inventory,
+                category=category,
             )
         except InvalidSku as error:
             logger.error(error)
@@ -150,6 +175,7 @@ class HTTPAPIAdapter:
         try:
             inventory = None
             price = None
+            category = None
             if product.inventory is not None:
                 inventory = Inventory(
                     quantity=product.inventory.quantity,
@@ -160,6 +186,8 @@ class HTTPAPIAdapter:
                     value=product.price.value,
                     discount_percent=product.price.discount_percent,
                 )
+            if product.category is not None:
+                category = Category(name=product.category.name)
             updated_product: Product = self.__catalogue_service.update_product(
                 sku=sku,
                 name=product.name,
@@ -167,15 +195,23 @@ class HTTPAPIAdapter:
                 image_url=product.image_url,
                 price=price,
                 inventory=inventory,
+                category=category,
             )
-            inventory_dto = InventoryDTO(
-                quantity=updated_product.inventory.quantity,
-                reserved=updated_product.inventory.reserved,
-            )
-            price_dto = PriceDTO(
-                value=updated_product.price.value,
-                discount_percent=updated_product.price.discount_percent,
-            )
+            inventory_dto = None
+            price_dto = None
+            category_dto = None
+            if updated_product.inventory:
+                inventory_dto = InventoryDTO(
+                    quantity=updated_product.inventory.quantity,
+                    reserved=updated_product.inventory.reserved,
+                )
+            if updated_product.price:
+                price_dto = PriceDTO(
+                    value=updated_product.price.value,
+                    discount_percent=updated_product.price.discount_percent,
+                )
+            if updated_product.category:
+                category_dto = CategoryDTO(name=updated_product.category.name)
             return ProductResponseDTO(
                 id=updated_product.id,
                 name=updated_product.name,
@@ -183,6 +219,7 @@ class HTTPAPIAdapter:
                 image_url=updated_product.image_url,
                 inventory=inventory_dto,
                 price=price_dto,
+                category=category_dto,
                 sku=updated_product.sku,
             )
         except (
