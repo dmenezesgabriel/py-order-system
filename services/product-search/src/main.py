@@ -57,16 +57,11 @@ queues = {
 
 
 def handle_sqs_message(queue_name: str, queue_url: str) -> None:
-    start = time.time()
     while True:
-        current = time.time()
         try:
             messages = sqs.receive_message(
                 QueueUrl=queue_url, MaxNumberOfMessages=10, WaitTimeSeconds=1
             )
-            spent = current - start
-            logger.debug(f"spent receiving message: {spent}")
-            start = current
             if "Messages" in messages:
                 logger.info(f"Messages in queue: {len(messages['Messages'])}")
                 for message in messages["Messages"]:
@@ -79,8 +74,6 @@ def handle_sqs_message(queue_name: str, queue_url: str) -> None:
             logger.error(
                 f"Error processing message for queue {queue_name}: {str(e)}"
             )
-        finally:
-            time.sleep(0.5)
 
 
 def process_message(

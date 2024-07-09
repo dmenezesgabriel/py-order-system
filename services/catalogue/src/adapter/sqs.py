@@ -38,7 +38,9 @@ class SQSAdapter(ProductEventPublisher):
         queue_url = self.__get_queue_url()
         try:
             self.__sqs.send_message(
-                QueueUrl=queue_url, MessageBody=product_event.to_json()
+                QueueUrl=queue_url,
+                MessageBody=product_event.to_json(),
+                DelaySeconds=1,
             )
         except Exception as error:
             raise SqsException(
