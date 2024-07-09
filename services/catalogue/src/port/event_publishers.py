@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 
-from src.domain.entities.product import Product
+from src.domain.events import ProductEvent
 
 
 class ProductEventPublisher(ABC):
     @abstractmethod
-    def publish(self, product: Product) -> None:
+    def publish(self, product_event: ProductEvent) -> None:
         raise NotImplementedError

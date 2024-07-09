@@ -441,11 +441,6 @@ class ProductPostgresAdapter(ProductRepository):
                 )
                 session.execute(delete_price_query)
 
-            if category_id is not None:
-                delete_category_query = self.__category_table.delete().where(
-                    self.__category_table.c.id == category_id
-                )
-                session.execute(delete_category_query)
             session.commit()
             return True
         except Exception as error:

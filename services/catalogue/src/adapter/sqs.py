@@ -1,8 +1,6 @@
-import json
-
 import boto3
 from src.adapter.exceptions import SqsException
-from src.domain.entities import Product
+from src.domain.events import ProductEvent
 from src.port.event_publishers import ProductEventPublisher
 
 
@@ -36,13 +34,11 @@ class SQSAdapter(ProductEventPublisher):
                 }
             )
 
-    def publish(self, product: Product) -> None:
+    def publish(self, product_event: ProductEvent) -> None:
         queue_url = self.__get_queue_url()
         try:
-            product_dict = product.to_dict()
-            product_json = json.dumps(product_dict)
             self.__sqs.send_message(
-                QueueUrl=queue_url, MessageBody=product_json
+                QueueUrl=queue_url, MessageBody=product_event.to_json()
             )
         except Exception as error:
             raise SqsException(

@@ -1,3 +1,4 @@
+import json
 import logging
 import threading
 import time
@@ -55,7 +56,7 @@ queues = {
 }
 
 
-def handle_sqs_message(queue_name, queue_url):
+def handle_sqs_message(queue_name: str, queue_url: str) -> None:
     while True:
         try:
             messages = sqs.receive_message(
@@ -77,31 +78,40 @@ def handle_sqs_message(queue_name, queue_url):
             time.sleep(10)
 
 
-def process_message(message, queue_name):
-    data = message["Body"]
+def process_message(
+    message: Dict[str, Union[str, Dict[str, Any]]], queue_name: str
+) -> None:
     try:
+        data = json.loads(message["Body"])
+        logger.info(data)
         if queue_name == "product-update":
-            product = Product.parse_raw(data)
-            produto_collection.update_one(
-                {"sku": product.sku},
-                {
-                    "$set": {
-                        "name": product.name,
-                        "description": product.description,
-                        "image_url": product.image_url,
-                        "price": {
-                            "value": product.price.value,
-                            "discount_percent": product.price.discount_percent,
-                        },
-                        "inventory": {
-                            "quantity": product.inventory.quantity,
-                            "reserved": product.inventory.reserved,
-                        },
-                        "category": {"name": product.category.name},
-                    }
-                },
-                upsert=True,
-            )
+            event_type = data.get("type")
+            if event_type in ["created", "updated"]:
+                product_data = data.get("product")
+                product = Product(**product_data)
+                produto_collection.update_one(
+                    {"sku": product.sku},
+                    {
+                        "$set": {
+                            "name": product.name,
+                            "description": product.description,
+                            "image_url": product.image_url,
+                            "price": {
+                                "value": product.price.value,
+                                "discount_percent": product.price.discount_percent,
+                            },
+                            "inventory": {
+                                "quantity": product.inventory.quantity,
+                                "reserved": product.inventory.reserved,
+                            },
+                            "category": {"name": product.category.name},
+                        }
+                    },
+                    upsert=True,
+                )
+            if event_type == "deleted":
+                sku_data = data.get("sku")
+                produto_collection.delete_one({"sku": sku_data})
     except Exception as error:
         logger.error(error)
         raise
@@ -149,6 +159,7 @@ def get_product_by_params(
 
 @app.on_event("startup")
 def start_sqs_handlers():
+    logger.info("started event handler")
     for queue_name, queue_url in queues.items():
         threading.Thread(
             target=handle_sqs_message, args=(queue_name, queue_url)
