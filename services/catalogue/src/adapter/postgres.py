@@ -361,17 +361,21 @@ class ProductPostgresAdapter(ProductRepository):
                 )
                 session.execute(inventory_update_query)
             if product.category:
-                category_update_query = (
-                    update(self.__category_table)
-                    .where(
-                        self.__category_table.c.id
-                        == select(self.__product_table.c.category_id).where(
-                            self.__product_table.c.sku == product.sku
-                        )
-                    )
-                    .values(name=product.category.name)
+                get_category = select(self.__category_table.c.id).where(
+                    self.__category_table.c.name == product.category.name
                 )
-                session.execute(category_update_query)
+                category_id = None
+                category_result = session.execute(get_category).fetchone()
+                if category_result:
+                    category_id = category_result[0]
+                if category_id is None:
+                    insert_category = insert(self.__category_table).values(
+                        id=product.category.id, name=product.category.name
+                    )
+                    category_result = session.execute(insert_category)
+                    if not hasattr(category_result, "inserted_primary_key"):
+                        raise on_not_found
+                    category_id = category_result.inserted_primary_key[0]
             session.commit()
             return self.get_product_by_sku(
                 sku=product.sku, on_not_found=on_not_found
@@ -437,11 +441,6 @@ class ProductPostgresAdapter(ProductRepository):
                 )
                 session.execute(delete_price_query)
 
-            if category_id is not None:
-                delete_category_query = self.__category_table.delete().where(
-                    self.__category_table.c.id == category_id
-                )
-                session.execute(delete_category_query)
             session.commit()
             return True
         except Exception as error:

@@ -1,8 +1,6 @@
 boto3==1.34.136
 fastapi==0.111.0
-psycopg2-binary==2.9.9
 pydantic==2.8.0
 requests==2.32.3
-SQLAlchemy==2.0.31
 uvicorn==0.30.1
-alembic==1.13.2
+pymongo==4.8.0
