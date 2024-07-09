@@ -57,25 +57,30 @@ queues = {
 
 
 def handle_sqs_message(queue_name: str, queue_url: str) -> None:
+    start = time.time()
     while True:
+        current = time.time()
         try:
             messages = sqs.receive_message(
-                QueueUrl=queue_url, MaxNumberOfMessages=10
+                QueueUrl=queue_url, MaxNumberOfMessages=10, WaitTimeSeconds=1
             )
-
+            spent = current - start
+            logger.debug(f"spent receiving message: {spent}")
+            start = current
             if "Messages" in messages:
+                logger.info(f"Messages in queue: {len(messages['Messages'])}")
                 for message in messages["Messages"]:
                     process_message(message, queue_name)
                     sqs.delete_message(
                         QueueUrl=queue_url,
                         ReceiptHandle=message["ReceiptHandle"],
                     )
-
-            time.sleep(5)
-
         except Exception as e:
-            print(f"Error processing message for queue {queue_name}: {str(e)}")
-            time.sleep(10)
+            logger.error(
+                f"Error processing message for queue {queue_name}: {str(e)}"
+            )
+        finally:
+            time.sleep(0.5)
 
 
 def process_message(
