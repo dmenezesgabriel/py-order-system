@@ -16,8 +16,8 @@ logger = logging.getLogger("app")
 app = FastAPI()
 
 client = MongoClient(config.MONGO_URL)
-db = client.busca_produto
-produto_collection = db.produto
+db = client["product_search"]
+product_collection = db["product"]
 
 
 class Price(BaseModel):
@@ -89,7 +89,7 @@ def process_message(
             if event_type in ["created", "updated"]:
                 product_data = data.get("product")
                 product = Product(**product_data)
-                produto_collection.update_one(
+                product_collection.update_one(
                     {"sku": product.sku},
                     {
                         "$set": {
@@ -111,7 +111,7 @@ def process_message(
                 )
             if event_type == "deleted":
                 sku_data = data.get("sku")
-                produto_collection.delete_one({"sku": sku_data})
+                product_collection.delete_one({"sku": sku_data})
     except Exception as error:
         logger.error(error)
         raise
@@ -120,7 +120,7 @@ def process_message(
 @app.get("/product/{sku}")
 def get_product_by_sku(sku: str):
     try:
-        result = produto_collection.find_one({"sku": sku})
+        result = product_collection.find_one({"sku": sku})
         if result is None:
             raise HTTPException(
                 status_code=404, detail="Produto não encontrado"
@@ -146,7 +146,7 @@ def get_product_by_params(
         query["description"] = {"$regex": description, "$options": "i"}
 
     try:
-        result = list(produto_collection.find(query))
+        result = list(product_collection.find(query))
         if not result:
             raise HTTPException(
                 status_code=204, detail="Produtos não encontrados na busca"
