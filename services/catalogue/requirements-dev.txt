@@ -1,0 +1,4 @@
+pytest
+pytest-cov
+pytest-watch
+moto[s3, sqs]

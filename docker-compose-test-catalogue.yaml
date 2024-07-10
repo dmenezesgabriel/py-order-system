@@ -1,0 +1,10 @@
+services:
+  catalogue-test:
+    build:
+      context: services/catalogue/
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./services/catalogue/:/app/
+    command: python -m pytest -v --cov-report xml:/reports/coverage.xml
+    env_file:
+      - .env.template

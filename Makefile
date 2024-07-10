@@ -35,3 +35,6 @@ init-catalogue: |
 
 init-product-search: |
 	docker compose up -d product-search
+
+test-catalogue:
+	docker compose -f docker-compose-test-catalogue.yaml run --rm catalogue-test

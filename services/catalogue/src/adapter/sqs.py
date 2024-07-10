@@ -1,4 +1,4 @@
-import boto3
+import boto3  # type: ignore
 from src.adapter.exceptions import SqsException
 from src.domain.events import ProductEvent
 from src.port.event_publishers import ProductEventPublisher
@@ -12,7 +12,7 @@ class SQSAdapter(ProductEventPublisher):
         aws_secret_access_key: str,
         endpoint_url: str,
         region_name: str,
-    ):
+    ) -> None:
         self.__queue_name = queue_name
         self.__sqs = boto3.client(
             "sqs",
