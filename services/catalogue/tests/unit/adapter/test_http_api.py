@@ -15,6 +15,7 @@ from src.adapter.http_api import HTTPApiAdapter
 from src.domain.entities import Product
 from src.domain.exceptions import (
     InvalidSku,
+    OutdatedProduct,
     ProductAlreadyExist,
     ProductNotFound,
 )
@@ -117,6 +118,30 @@ class TestHTTPApiAdapter(unittest.TestCase):
         self.assertIn("Product already exists", context.exception.detail)
         mock_logger_error.assert_called_once()
 
+    @patch("logging.Logger.error")
+    def test_create_product_should_raise_exception(
+        self, mock_logger_error: Mock
+    ) -> None:
+        product_request = ProductRequestDTO(
+            sku="duplicate_sku",
+            name="test_name",
+            description="test_description",
+            image_url="http://test.com/image.png",
+        )
+        self.catalogue_service_mock.create_product.side_effect = Exception(
+            "Generic test exception"
+        )
+
+        with self.assertRaises(HTTPException) as context:
+            self.client.post("/product", json=product_request.model_dump())
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertIn(
+            "Error creating product: Generic test exception",
+            context.exception.detail,
+        )
+        mock_logger_error.assert_called_once()
+
     def test_should_get_product_by_sku(self) -> None:
         id_ = uuid4()
         product = Product(
@@ -163,6 +188,39 @@ class TestHTTPApiAdapter(unittest.TestCase):
 
         self.assertEqual(context.exception.status_code, 404)
         self.assertIn("Product not found", context.exception.detail)
+        mock_logger_error.assert_called_once()
+
+    @patch("logging.Logger.error")
+    def test_get_product_by_sku_should_raise_invalid_sku(
+        self, mock_logger_error: Mock
+    ) -> None:
+        self.catalogue_service_mock.get_product_by_sku.side_effect = (
+            InvalidSku("Invalid SKU")
+        )
+
+        with self.assertRaises(HTTPException) as context:
+            self.client.get("/product/non_existing_sku")
+
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertIn("Invalid SKU", context.exception.detail)
+        mock_logger_error.assert_called_once()
+
+    @patch("logging.Logger.error")
+    def test_get_product_by_sku_should_raise_generic_exception(
+        self, mock_logger_error: Mock
+    ) -> None:
+        self.catalogue_service_mock.get_product_by_sku.side_effect = Exception(
+            "Generic exception"
+        )
+
+        with self.assertRaises(HTTPException) as context:
+            self.client.get("/product/non_existing_sku")
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertIn(
+            "Error getting product: Generic exception",
+            context.exception.detail,
+        )
         mock_logger_error.assert_called_once()
 
     def test_should_update_product(self) -> None:
@@ -234,6 +292,78 @@ class TestHTTPApiAdapter(unittest.TestCase):
         self.assertIn("Product not found", context.exception.detail)
         mock_logger_error.assert_called_once()
 
+    @patch("logging.Logger.error")
+    def test_update_product_should_raise_invalid_sku(
+        self, mock_logger_error: Mock
+    ) -> None:
+        product_request = ProductRequestDTO(
+            sku="123456",
+            name="updated_name",
+            description="updated_description",
+            image_url="http://updated.com/image.png",
+        )
+        self.catalogue_service_mock.update_product.side_effect = InvalidSku(
+            "Invalid SKU"
+        )
+
+        with self.assertRaises(HTTPException) as context:
+            self.client.put(
+                "/product/non_existing_sku", json=product_request.model_dump()
+            )
+
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertIn("Invalid SKU", context.exception.detail)
+        mock_logger_error.assert_called_once()
+
+    @patch("logging.Logger.error")
+    def test_update_product_should_raise_outdated_product(
+        self, mock_logger_error: Mock
+    ) -> None:
+        product_request = ProductRequestDTO(
+            sku="123456",
+            name="updated_name",
+            description="updated_description",
+            image_url="http://updated.com/image.png",
+        )
+        self.catalogue_service_mock.update_product.side_effect = (
+            OutdatedProduct("Outdated product")
+        )
+
+        with self.assertRaises(HTTPException) as context:
+            self.client.put(
+                "/product/123456", json=product_request.model_dump()
+            )
+
+        self.assertEqual(context.exception.status_code, 409)
+        self.assertIn("Outdated product", context.exception.detail)
+        mock_logger_error.assert_called_once()
+
+    @patch("logging.Logger.error")
+    def test_update_product_should_raise_generic_exception(
+        self, mock_logger_error: Mock
+    ) -> None:
+        product_request = ProductRequestDTO(
+            sku="123456",
+            name="updated_name",
+            description="updated_description",
+            image_url="http://updated.com/image.png",
+        )
+        self.catalogue_service_mock.update_product.side_effect = Exception(
+            "Generic test exception"
+        )
+
+        with self.assertRaises(HTTPException) as context:
+            self.client.put(
+                "/product/123456", json=product_request.model_dump()
+            )
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertIn(
+            "Error updating product: Generic test exception",
+            context.exception.detail,
+        )
+        mock_logger_error.assert_called_once()
+
     def test_delete_product(self):
         response = self.client.delete("/product/123456")
 
@@ -250,6 +380,35 @@ class TestHTTPApiAdapter(unittest.TestCase):
 
         self.assertEqual(context.exception.status_code, 404)
         self.assertIn("Product not found", context.exception.detail)
+        mock_logger_error.assert_called_once()
+
+    @patch("logging.Logger.error")
+    def test_delete_product_should_raise_invalid_sku(self, mock_logger_error):
+        self.catalogue_service_mock.delete_product.side_effect = InvalidSku(
+            "Invalid SKU"
+        )
+        with self.assertRaises(HTTPException) as context:
+            self.client.delete("/product/non_existing_sku")
+
+        self.assertEqual(context.exception.status_code, 400)
+        self.assertIn("Invalid SKU", context.exception.detail)
+        mock_logger_error.assert_called_once()
+
+    @patch("logging.Logger.error")
+    def test_delete_product_should_raise_generic_exception(
+        self, mock_logger_error
+    ):
+        self.catalogue_service_mock.delete_product.side_effect = Exception(
+            "Generic test exception"
+        )
+        with self.assertRaises(HTTPException) as context:
+            self.client.delete("/product/non_existing_sku")
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertIn(
+            "Error deleting product: Generic test exception",
+            context.exception.detail,
+        )
         mock_logger_error.assert_called_once()
 
 
