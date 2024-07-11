@@ -29,7 +29,7 @@ config = get_config()
 logger = logging.getLogger("app")
 
 
-class HTTPAPIAdapter:
+class HTTPApiAdapter:
     def __init__(self, catalogue_service: CatalogueService) -> None:
         self.__catalogue_service = catalogue_service
         self.router = APIRouter()

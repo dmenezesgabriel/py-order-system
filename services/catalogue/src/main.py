@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from src.adapter.http_api import HTTPAPIAdapter
+from src.adapter.http_api import HTTPApiAdapter
 from src.adapter.postgres import ProductPostgresAdapter
 from src.adapter.sqs import SQSAdapter
 from src.config import get_config
@@ -26,5 +26,5 @@ async def startup_event():
         product_event_publisher=sqs_adapter,
         product_repository=product_postgres_adapter,
     )
-    http_api_adapter = HTTPAPIAdapter(catalogue_service=catalogue_service)
+    http_api_adapter = HTTPApiAdapter(catalogue_service=catalogue_service)
     app.include_router(http_api_adapter.router)

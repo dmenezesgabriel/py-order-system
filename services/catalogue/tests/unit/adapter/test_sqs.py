@@ -27,22 +27,27 @@ class TestSQSAdapter(unittest.TestCase):
         self.mock_sqs_client = mock_boto_client.return_value
 
     def test_should_get_queue_url(self) -> None:
+        # Arrange
         self.mock_sqs_client.get_queue_url.return_value = {
             "QueueUrl": "http://test-queue-url"
         }
 
+        # Act
         queue_url = self.sqs_adapter._SQSAdapter__get_queue_url()
 
+        # Assert
         self.assertEqual(queue_url, "http://test-queue-url")
         self.mock_sqs_client.get_queue_url.assert_called_once_with(
             QueueName=self.queue_name
         )
 
     def test_get_queue_url_should_fail(self) -> None:
+        # Arrange
         self.mock_sqs_client.get_queue_url.side_effect = Exception(
             "Queue not found"
         )
 
+        # Act & Assert
         with self.assertRaises(SqsException) as context:
             self.sqs_adapter._SQSAdapter__get_queue_url()
 
@@ -57,14 +62,17 @@ class TestSQSAdapter(unittest.TestCase):
         return_value='{"type": "deleted", "sku": "123"}',
     )
     def test_should_publish_message(self, mock_to_json) -> None:
+        # Arrange
         self.mock_sqs_client.get_queue_url.return_value = {
             "QueueUrl": "http://test-queue-url"
         }
         self.mock_sqs_client.send_message.return_value = {}
 
+        #  Act
         product_event = ProductEvent(type=ProductEventType.DELETED, sku="123")
         self.sqs_adapter.publish(product_event)
 
+        # Assert
         self.mock_sqs_client.get_queue_url.assert_called_once_with(
             QueueName=self.queue_name
         )
@@ -75,6 +83,7 @@ class TestSQSAdapter(unittest.TestCase):
         )
 
     def test_publish_message_should_fail(self) -> None:
+        # Arrange
         self.mock_sqs_client.get_queue_url.return_value = {
             "QueueUrl": "http://test-queue-url"
         }
@@ -84,6 +93,7 @@ class TestSQSAdapter(unittest.TestCase):
 
         product_event = ProductEvent(type=ProductEventType.DELETED, sku="123")
 
+        # Act & Assert
         with self.assertRaises(SqsException) as context:
             self.sqs_adapter.publish(product_event)
 
