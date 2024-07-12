@@ -7,7 +7,7 @@ from src.utils.singleton import Singleton
 
 class Config(metaclass=Singleton):
     LOG_LEVEL = "DEBUG"
-    DATABASE_URL = os.getenv("DATABASE_URL")
+    DATABASE_URL = os.getenv("CATALOGUE_DATABASE_URL")
     QUEUE_NAME = os.getenv("QUEUE_NAME")
     ENDPOINT_URL = os.getenv("ENDPOINT_URL")
     REGION_NAME = os.getenv("REGION_NAME")

@@ -36,7 +36,7 @@ services:
       - .env.template
     volumes:
       - db_services_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
+      - ./postgres:/docker-entrypoint-initdb.d
     networks:
       - order-system-network
 

@@ -30,7 +30,7 @@ logger = logging.getLogger("app")
 class ProductPostgresAdapter(ProductRepository):
     def __init__(self, database_url) -> None:
         self.__engine = create_engine(database_url)
-        self._metadata = MetaData(schema="catalogue")
+        self._metadata = MetaData()
 
         self.__inventory_table = Table(
             "Inventory",
@@ -165,10 +165,24 @@ class ProductPostgresAdapter(ProductRepository):
     def get_product_by_sku(self, sku: str, on_not_found: Exception) -> Product:
         query = (
             select(
-                self.__product_table,
-                self.__price_table,
-                self.__inventory_table,
-                self.__category_table,
+                self.__product_table.c.id.label("product_id"),
+                self.__product_table.c.version.label("product_version"),
+                self.__product_table.c.sku.label("product_sku"),
+                self.__product_table.c.name.label("product_name"),
+                self.__product_table.c.description.label(
+                    "product_description"
+                ),
+                self.__product_table.c.image_url.label("product_image_url"),
+                self.__product_table.c.price_id,
+                self.__product_table.c.inventory_id,
+                self.__product_table.c.category_id,
+                self.__price_table.c.value.label("price_value"),
+                self.__price_table.c.discount_percent.label(
+                    "price_discount_percent"
+                ),
+                self.__inventory_table.c.quantity.label("inventory_quantity"),
+                self.__inventory_table.c.reserved.label("inventory_reserved"),
+                self.__category_table.c.name.label("category_name"),
             )
             .select_from(
                 self.__product_table.outerjoin(
@@ -196,77 +210,32 @@ class ProductPostgresAdapter(ProductRepository):
                     logger.error(f"Product not found for {sku}")
                     raise on_not_found
 
-                product_column_names = [
-                    column.name for column in self.__product_table.c
-                ]
-                price_column_names = [
-                    column.name for column in self.__price_table.c
-                ]
-                inventory_column_names = [
-                    column.name for column in self.__inventory_table.c
-                ]
-                category_column_names = [
-                    column.name for column in self.__category_table.c
-                ]
-
-                product_dict = dict(
-                    zip(
-                        product_column_names,
-                        result[0 : len(product_column_names)],
+                inventory = None
+                if hasattr(result, "inventory_id"):
+                    inventory = Inventory(
+                        id=result.inventory_id,
+                        quantity=result.inventory_quantity,
+                        reserved=result.inventory_reserved,
                     )
-                )
-                price_dict = dict(
-                    zip(
-                        price_column_names,
-                        result[
-                            len(product_column_names) : len(
-                                product_column_names
-                            )
-                            + len(price_column_names)
-                        ],
+                price = None
+                if hasattr(result, "price_id"):
+                    price = Price(
+                        id=result.price_id,
+                        value=result.price_value,
+                        discount_percent=result.price_discount_percent,
                     )
-                )
-                inventory_dict = dict(
-                    zip(
-                        inventory_column_names,
-                        result[
-                            len(product_column_names)
-                            + len(price_column_names) : len(
-                                product_column_names
-                            )
-                            + len(price_column_names)
-                            + len(inventory_column_names)
-                        ],
+                category = None
+                if hasattr(result, "category_id"):
+                    category = Category(
+                        id=result.category_id, name=result.category_name
                     )
-                )
-                category_dict = dict(
-                    zip(
-                        category_column_names,
-                        result[
-                            len(product_column_names)
-                            + len(price_column_names)
-                            + len(inventory_column_names) : len(
-                                product_column_names
-                            )
-                            + len(price_column_names)
-                            + len(inventory_column_names)
-                            + len(category_column_names)
-                        ],
-                    )
-                )
-                inventory = (
-                    Inventory(**inventory_dict)
-                    if inventory_dict.get("id")
-                    else None
-                )
-                price = Price(**price_dict) if price_dict.get("id") else None
-                category = (
-                    Category(**category_dict)
-                    if category_dict.get("id")
-                    else None
-                )
                 product = Product(
-                    **product_dict,
+                    id=result.product_id,
+                    version=result.product_version,
+                    sku=result.product_sku,
+                    name=result.product_name,
+                    description=result.product_description,
+                    image_url=result.product_image_url,
                     price=price,
                     inventory=inventory,
                     category=category,
