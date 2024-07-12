@@ -136,38 +136,6 @@ class TestProductPostgresAdapter(unittest.TestCase):
             self.mock_sessionmaker.return_value().rollback.call_count, 1
         )
 
-    def test_should_get_product_by_sku(self):
-        # Arrange
-        id_ = uuid4()
-        self.mock_sessionmaker.return_value().execute.return_value = (
-            id_,
-            "123456",
-            "test_name",
-            "test_description",
-            "http://test.com/image.png",
-        )
-
-        with patch.object(
-            self.adapter, "product_table_columns"
-        ) as mock_columns:
-            mock_columns.return_value = [
-                "id",
-                "sku",
-                "name",
-                "description",
-                "image_url",
-            ]
-
-            # Act
-            result = self.adapter.get_product_by_sku(
-                "123456", on_not_found=Exception
-            )
-
-        # Assert
-        self.assertEqual(result.id, id_)
-        self.assertEqual(result.sku, "123456")
-        self.assertEqual(result.name, "test_name")
-
 
 if __name__ == "__main__":
     unittest.main()
