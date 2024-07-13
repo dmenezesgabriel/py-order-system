@@ -320,9 +320,9 @@ class ProductPostgresAdapter(ProductRepository):
                     update(self.__price_table)
                     .where(
                         self.__price_table.c.id
-                        == select(self.__product_table.c.price_id).where(
-                            self.__product_table.c.sku == product.sku
-                        )
+                        == select(self.__product_table.c.price_id)
+                        .where(self.__product_table.c.sku == product.sku)
+                        .scalar_subquery()
                     )
                     .values(
                         value=product.price.value,
@@ -336,9 +336,9 @@ class ProductPostgresAdapter(ProductRepository):
                     update(self.__inventory_table)
                     .where(
                         self.__inventory_table.c.id
-                        == select(self.__product_table.c.inventory_id).where(
-                            self.__product_table.c.sku == product.sku
-                        )
+                        == select(self.__product_table.c.inventory_id)
+                        .where(self.__product_table.c.sku == product.sku)
+                        .scalar_subquery()
                     )
                     .values(
                         quantity=product.inventory.quantity,

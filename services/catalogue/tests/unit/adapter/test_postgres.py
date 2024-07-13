@@ -259,6 +259,149 @@ class TestProductPostgresAdapter(unittest.TestCase):
                 on_not_found=Exception,
             )
 
+    def test_should_update_product(self):
+        # Arrange
+        mock_product = ProductHelper.create_product()
+        self.mock_sessionmaker.return_value.execute.return_value.fetchone = (
+            Mock(return_value=(mock_product.version,))
+        )
+        self.adapter.get_product_by_sku = Mock(return_value=mock_product)
+
+        # Act
+        updated_product = self.adapter.update_product(
+            product=mock_product,
+            on_not_found=Exception,
+            on_outdated_version=Exception,
+            on_duplicate=Exception,
+        )
+
+        # Assert
+        self.assertEqual(
+            self.mock_sessionmaker.return_value().execute.call_count, 5
+        )
+        self.adapter.get_product_by_sku.assert_called_once()
+        self.assertEqual(updated_product.sku, mock_product.sku)
+        self.assertEqual(updated_product.name, mock_product.name)
+        self.assertEqual(updated_product.description, mock_product.description)
+        self.assertEqual(updated_product.image_url, mock_product.image_url)
+        self.assertEqual(updated_product.price.value, mock_product.price.value)
+        self.assertEqual(
+            updated_product.inventory.quantity, mock_product.inventory.quantity
+        )
+        self.assertEqual(
+            updated_product.inventory.reserved, mock_product.inventory.reserved
+        )
+        self.assertEqual(
+            updated_product.category.name, mock_product.category.name
+        )
+
+    def test_should_handle_update_product_not_found(self):
+        # Arrange
+        mock_product = ProductHelper.create_product()
+        fetchone = (
+            self.mock_sessionmaker.return_value().execute.return_value.fetchone
+        )
+        fetchone.side_effect = Exception("Mock DB Error")
+
+        # Act & Assert
+        with self.assertRaises(Exception):
+            self.adapter.update_product(
+                product=mock_product,
+                on_not_found=Exception,
+                on_outdated_version=Exception,
+                on_duplicate=Exception,
+            )
+
+    def test_should_handle_update_product_outdated_version(self):
+        # Arrange
+        mock_product = ProductHelper.create_product()
+        fetchone = (
+            self.mock_sessionmaker.return_value().execute.return_value.fetchone
+        )
+        fetchone.side_effect = Exception("Mock DB Error")
+        # Act & Assert
+        with self.assertRaises(Exception):
+            self.adapter.update_product(
+                product=mock_product,
+                on_not_found=Exception,
+                on_outdated_version=Exception,
+                on_duplicate=Exception,
+            )
+
+    def test_should_handle_update_product_integrity_error(self):
+        # Arrange
+        mock_product = ProductHelper.create_product()
+        self.mock_sessionmaker.return_value.execute.return_value.fetchone = (
+            Mock(return_value=(mock_product.version,))
+        )
+        self.mock_sessionmaker.return_value().execute.side_effect = (
+            IntegrityError(params=[], orig=Exception, statement="")
+        )
+
+        # Act & Assert
+        with self.assertRaises(Exception):
+            self.adapter.update_product(
+                product=mock_product,
+                on_not_found=Exception,
+                on_outdated_version=Exception,
+                on_duplicate=Exception,
+            )
+
+        self.assertEqual(
+            self.mock_sessionmaker.return_value().rollback.call_count, 1
+        )
+
+    def test_should_delete_product(self):
+        # Arrange
+        mock_product = ProductHelper.create_product()
+        self.mock_sessionmaker.return_value().execute.return_value.fetchone = (
+            Mock(
+                return_value=(
+                    mock_product.id,
+                    mock_product.inventory.id,
+                    mock_product.price.id,
+                    mock_product.category.id,
+                )
+            )
+        )
+
+        # Act
+        result = self.adapter.delete_product(
+            sku=mock_product.sku, on_not_found=Exception
+        )
+
+        # Assert
+        self.assertTrue(result)
+        self.assertEqual(
+            self.mock_sessionmaker.return_value().execute.call_count, 4
+        )
+
+    def test_should_handle_delete_product_not_found(self):
+        # Arrange
+        self.mock_sessionmaker.return_value.execute.return_value.fetchone = (
+            Mock(return_value=None)
+        )
+
+        # Act & Assert
+        with self.assertRaises(Exception):
+            self.adapter.delete_product(
+                sku="non_existent_sku", on_not_found=Exception
+            )
+
+    def test_should_handle_delete_product_database_exception(self):
+        # Arrange
+        self.mock_sessionmaker.return_value.execute.return_value.fetchone = (
+            Mock(side_effect=Exception("Mock DB Error"))
+        )
+
+        # Act & Assert
+        with self.assertRaises(DatabaseException):
+            self.adapter.delete_product(sku="test_sku", on_not_found=Exception)
+
+        self.assertEqual(
+            self.mock_sessionmaker.return_value().rollback.call_count, 1
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
