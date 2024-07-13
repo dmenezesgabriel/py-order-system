@@ -95,7 +95,12 @@ class ProductPostgresAdapter(ProductRepository):
                 )
                 price_result = session.execute(insert_price)
                 if not hasattr(price_result, "inserted_primary_key"):
-                    raise on_not_found
+                    raise DatabaseException(
+                        {
+                            "code": "database.error.insert",
+                            "message": "Error inserting price",
+                        }
+                    )
                 price_id = price_result.inserted_primary_key[0]
 
             if product.inventory:
@@ -106,7 +111,12 @@ class ProductPostgresAdapter(ProductRepository):
                 )
                 inventory_result = session.execute(insert_inventory)
                 if not hasattr(inventory_result, "inserted_primary_key"):
-                    raise on_not_found
+                    raise DatabaseException(
+                        {
+                            "code": "database.error.insert",
+                            "message": "Error inserting inventory",
+                        }
+                    )
                 inventory_id = inventory_result.inserted_primary_key[0]
 
             if product.category:
@@ -125,7 +135,12 @@ class ProductPostgresAdapter(ProductRepository):
                     if not hasattr(
                         category_result_row, "inserted_primary_key"
                     ):
-                        raise on_not_found
+                        raise DatabaseException(
+                            {
+                                "code": "database.error.insert",
+                                "message": "Error inserting category",
+                            }
+                        )
                     category_id = category_result_row.inserted_primary_key[0]
 
             logger.info("Inserting")

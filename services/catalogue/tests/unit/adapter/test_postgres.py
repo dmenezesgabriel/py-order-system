@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.engine.cursor import CursorResult
+from sqlalchemy.exc import IntegrityError, NoResultFound
 from src.adapter.exceptions import DatabaseException
 from src.adapter.postgres import ProductPostgresAdapter
 from tests.helpers.product import ProductHelper
@@ -67,6 +68,96 @@ class TestProductPostgresAdapter(unittest.TestCase):
         )
         self.assertEqual(
             created_product.category.name, mock_product.category.name
+        )
+
+    def test_should_handle_create_product_insert_price_fail(self):
+        # Arrange
+        mock_product = ProductHelper.create_product()
+        self.mock_sessionmaker.return_value.execute.return_value = Mock(
+            inserted_primary_key=[mock_product.id]
+        )
+        self.adapter.get_product_by_sku = Mock(return_value=mock_product)
+        mock_row = Mock(spec=CursorResult)
+        mock_row.inserted_primary_key = "id"
+
+        self.mock_sessionmaker.return_value().execute.side_effect = [
+            None,
+            mock_row,
+            mock_row,
+            mock_row,
+        ]
+
+        # Act & Assert
+        with self.assertRaises(DatabaseException):
+            self.adapter.create_product(
+                mock_product,
+                on_duplicate_sku=Exception,
+                on_not_found=Exception,
+            )
+
+        # Assert
+        self.assertEqual(
+            self.mock_sessionmaker.return_value().execute.call_count, 1
+        )
+
+    def test_should_handle_create_product_insert_inventory_fail(self):
+        # Arrange
+        mock_product = ProductHelper.create_product()
+        self.mock_sessionmaker.return_value.execute.return_value = Mock(
+            inserted_primary_key=[mock_product.id]
+        )
+        self.adapter.get_product_by_sku = Mock(return_value=mock_product)
+        mock_row = Mock(spec=CursorResult)
+        mock_row.inserted_primary_key = "id"
+
+        self.mock_sessionmaker.return_value().execute.side_effect = [
+            mock_row,
+            None,
+            mock_row,
+            mock_row,
+        ]
+
+        # Act & Assert
+        with self.assertRaises(DatabaseException):
+            self.adapter.create_product(
+                mock_product,
+                on_duplicate_sku=Exception,
+                on_not_found=Exception,
+            )
+
+        # Assert
+        self.assertEqual(
+            self.mock_sessionmaker.return_value().execute.call_count, 2
+        )
+
+    def test_should_handle_create_product_insert_category_fail(self):
+        # Arrange
+        mock_product = ProductHelper.create_product()
+        self.mock_sessionmaker.return_value.execute.return_value = Mock(
+            inserted_primary_key=[mock_product.id]
+        )
+        self.adapter.get_product_by_sku = Mock(return_value=mock_product)
+        mock_row = Mock(spec=CursorResult)
+        mock_row.inserted_primary_key = "id"
+
+        self.mock_sessionmaker.return_value().execute.side_effect = [
+            mock_row,
+            mock_row,
+            None,
+            mock_row,
+        ]
+
+        # Act & Assert
+        with self.assertRaises(DatabaseException):
+            self.adapter.create_product(
+                mock_product,
+                on_duplicate_sku=Exception,
+                on_not_found=Exception,
+            )
+
+        # Assert
+        self.assertEqual(
+            self.mock_sessionmaker.return_value().execute.call_count, 3
         )
 
     def test_should_handle_create_product_database_exception(self):
@@ -139,6 +230,34 @@ class TestProductPostgresAdapter(unittest.TestCase):
             product.inventory.reserved, mock_product.inventory.reserved
         )
         self.assertEqual(product.category.name, mock_product.category.name)
+
+    def test_should_handle_get_product_by_sku_no_result_found(self):
+        # Arrange
+        fetchone = (
+            self.mock_sessionmaker.return_value().execute.return_value.fetchone
+        )
+        fetchone.side_effect = NoResultFound()
+
+        # Act & Assert
+        with self.assertRaises(Exception):
+            self.adapter.get_product_by_sku(
+                sku="test_sku",
+                on_not_found=Exception,
+            )
+
+    def test_should_handle_get_product_by_sku_generic_exception(self):
+        # Arrange
+        fetchone = (
+            self.mock_sessionmaker.return_value().execute.return_value.fetchone
+        )
+        fetchone.side_effect = Exception()
+
+        # Act & Assert
+        with self.assertRaises(DatabaseException):
+            self.adapter.get_product_by_sku(
+                sku="test_sku",
+                on_not_found=Exception,
+            )
 
 
 if __name__ == "__main__":
