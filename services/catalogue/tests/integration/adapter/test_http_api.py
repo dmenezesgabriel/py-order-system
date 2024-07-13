@@ -12,7 +12,7 @@ from src.adapter.dto import (
     ProductResponseDTO,
 )
 from src.adapter.http_api import HTTPApiAdapter
-from src.domain.entities import Product
+from src.domain.entities import Category, Product
 from src.domain.exceptions import (
     InvalidSku,
     OutdatedProduct,
@@ -20,7 +20,7 @@ from src.domain.exceptions import (
     ProductNotFound,
 )
 from src.domain.services import CatalogueService
-from src.domain.value_objects import Category, Inventory, Price
+from src.domain.value_objects import Inventory, Price
 
 
 class TestHTTPApiAdapter(unittest.TestCase):

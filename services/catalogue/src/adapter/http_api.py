@@ -9,7 +9,7 @@ from src.adapter.dto import (
     ProductResponseDTO,
 )
 from src.config import get_config
-from src.domain.entities import Product
+from src.domain.entities import Category, Product
 from src.domain.exceptions import (
     DuplicatedProduct,
     InvalidDescription,
@@ -23,7 +23,7 @@ from src.domain.exceptions import (
     ProductNotFound,
 )
 from src.domain.services import CatalogueService
-from src.domain.value_objects import Category, Inventory, Price
+from src.domain.value_objects import Inventory, Price
 
 config = get_config()
 logger = logging.getLogger("app")

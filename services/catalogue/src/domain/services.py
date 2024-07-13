@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from src.config import get_config
-from src.domain.entities import Product
+from src.domain.entities import Category, Product
 from src.domain.enums import ProductEventType
 from src.domain.events import ProductEvent
 from src.domain.exceptions import (
@@ -21,7 +21,7 @@ from src.domain.exceptions import (
     ProductNotFound,
     UpdateProductError,
 )
-from src.domain.value_objects import Category, Inventory, Price
+from src.domain.value_objects import Inventory, Price
 from src.port import ProductEventPublisher, ProductRepository
 
 config = get_config()

@@ -1,12 +1,13 @@
 import unittest
+from collections import namedtuple
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
 from sqlalchemy.exc import IntegrityError
 from src.adapter.exceptions import DatabaseException
 from src.adapter.postgres import ProductPostgresAdapter
-from src.domain.entities import Product
-from src.domain.value_objects import Category, Inventory, Price
+from src.domain.entities import Category, Product
+from src.domain.value_objects import Inventory, Price
 
 
 class TestProductPostgresAdapter(unittest.TestCase):
@@ -135,6 +136,82 @@ class TestProductPostgresAdapter(unittest.TestCase):
         self.assertEqual(
             self.mock_sessionmaker.return_value().rollback.call_count, 1
         )
+
+    def test_should_get_product_by_sku(self):
+        # Arrange
+        product_id = uuid4()
+        inventory_id = uuid4()
+        price_id = uuid4()
+        category_id = uuid4()
+        mock_product = Product(
+            id=product_id,
+            sku="test_sku",
+            name="Test Product",
+            description="Test Description",
+            image_url="http://example.com/image.png",
+            price=Price(id=uuid4(), value=100.0, discount_percent=0.0),
+            inventory=Inventory(id=uuid4(), quantity=10, reserved=0),
+            category=Category(id=uuid4(), name="Test Category"),
+        )
+        Row = namedtuple(
+            "row",
+            [
+                "product_id",
+                "product_sku",
+                "product_version",
+                "product_name",
+                "product_description",
+                "product_image_url",
+                "price_id",
+                "price_value",
+                "price_discount_percent",
+                "inventory_id",
+                "inventory_quantity",
+                "inventory_reserved",
+                "category_id",
+                "category_name",
+            ],
+        )
+
+        self.mock_sessionmaker.return_value().execute.return_value.fetchone = (
+            Mock(
+                return_value=Row(
+                    product_id,
+                    "test_sku",
+                    1,
+                    "Test Product",
+                    "Test Description",
+                    "http://example.com/image.png",
+                    price_id,
+                    100.0,
+                    0.0,
+                    inventory_id,
+                    10,
+                    0,
+                    category_id,
+                    "Test Category",
+                )
+            )
+        )
+
+        # Act
+        product = self.adapter.get_product_by_sku(
+            sku="test_sku", on_not_found=Exception
+        )
+
+        # Assert
+        self.assertEqual(product.sku, mock_product.sku)
+        self.assertEqual(product.name, mock_product.name)
+        self.assertEqual(product.description, mock_product.description)
+        self.assertEqual(product.image_url, mock_product.image_url)
+        self.assertEqual(product.price.value, mock_product.price.value)
+        self.assertEqual(
+            product.inventory.quantity, mock_product.inventory.quantity
+        )
+        self.assertEqual(
+            product.inventory.reserved, mock_product.inventory.reserved
+        )
+        self.assertEqual(product.category.name, mock_product.category.name)
 
 
 if __name__ == "__main__":

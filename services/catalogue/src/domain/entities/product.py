@@ -1,13 +1,14 @@
 from typing import Optional
 from uuid import UUID, uuid4
 
+from src.domain.entities import Category
 from src.domain.exceptions import (
     InvalidDescription,
     InvalidImageUrl,
     InvalidName,
     InvalidSku,
 )
-from src.domain.value_objects import Category, Inventory, Price
+from src.domain.value_objects import Inventory, Price
 
 
 class Product:

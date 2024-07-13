@@ -19,8 +19,8 @@ from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm import sessionmaker
 from src.adapter.exceptions import DatabaseException
 from src.config import get_config
-from src.domain.entities import Product
-from src.domain.value_objects import Category, Inventory, Price
+from src.domain.entities import Category, Product
+from src.domain.value_objects import Inventory, Price
 from src.port.repositories import ProductRepository
 
 config = get_config()
@@ -202,60 +202,60 @@ class ProductPostgresAdapter(ProductRepository):
             )
             .where(self.__product_table.c.sku == sku)
         )
-
-        with self.__engine.connect() as connection:
-            try:
-                result = connection.execute(query).fetchone()
-                if result is None:
-                    logger.error(f"Product not found for {sku}")
-                    raise on_not_found
-
-                inventory = None
-                if hasattr(result, "inventory_id"):
-                    inventory = Inventory(
-                        id=result.inventory_id,
-                        quantity=result.inventory_quantity,
-                        reserved=result.inventory_reserved,
-                    )
-                price = None
-                if hasattr(result, "price_id"):
-                    price = Price(
-                        id=result.price_id,
-                        value=result.price_value,
-                        discount_percent=result.price_discount_percent,
-                    )
-                category = None
-                if hasattr(result, "category_id"):
-                    category = Category(
-                        id=result.category_id, name=result.category_name
-                    )
-                product = Product(
-                    id=result.product_id,
-                    version=result.product_version,
-                    sku=result.product_sku,
-                    name=result.product_name,
-                    description=result.product_description,
-                    image_url=result.product_image_url,
-                    price=price,
-                    inventory=inventory,
-                    category=category,
-                )
-                return product
-
-            except NoResultFound as error:
-                logger.error(error)
+        session = self.__session()
+        try:
+            session.begin()
+            result = session.execute(query).fetchone()
+            if result is None:
+                logger.error(f"Product not found for {sku}")
                 raise on_not_found
-            except Exception as error:
-                logger.error(error)
-                if type(error) is type(on_not_found):
-                    raise
 
-                raise DatabaseException(
-                    {
-                        "code": "database.error.select",
-                        "message": f"Error searching product by sku :{error}",
-                    }
+            inventory = None
+            if hasattr(result, "inventory_id"):
+                inventory = Inventory(
+                    id=result.inventory_id,
+                    quantity=result.inventory_quantity,
+                    reserved=result.inventory_reserved,
                 )
+            price = None
+            if hasattr(result, "price_id"):
+                price = Price(
+                    id=result.price_id,
+                    value=result.price_value,
+                    discount_percent=result.price_discount_percent,
+                )
+            category = None
+            if hasattr(result, "category_id"):
+                category = Category(
+                    id=result.category_id, name=result.category_name
+                )
+            product = Product(
+                id=result.product_id,
+                version=result.product_version,
+                sku=result.product_sku,
+                name=result.product_name,
+                description=result.product_description,
+                image_url=result.product_image_url,
+                price=price,
+                inventory=inventory,
+                category=category,
+            )
+            return product
+
+        except NoResultFound as error:
+            logger.error(error)
+            raise on_not_found
+        # except Exception as error:
+        #     logger.error(error)
+        #     if type(error) is type(on_not_found):
+        #         raise
+
+        #     raise DatabaseException(
+        #         {
+        #             "code": "database.error.select",
+        #             "message": f"Error searching product by sku :{error}",
+        #         }
+        #     )
 
     def update_product(
         self,
