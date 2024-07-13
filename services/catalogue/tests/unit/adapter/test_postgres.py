@@ -1,13 +1,10 @@
 import unittest
-from collections import namedtuple
 from unittest.mock import Mock, patch
-from uuid import uuid4
 
 from sqlalchemy.exc import IntegrityError
 from src.adapter.exceptions import DatabaseException
 from src.adapter.postgres import ProductPostgresAdapter
-from src.domain.entities import Category, Product
-from src.domain.value_objects import Inventory, Price
+from tests.helpers.product import ProductHelper
 
 
 class TestProductPostgresAdapter(unittest.TestCase):
@@ -41,16 +38,7 @@ class TestProductPostgresAdapter(unittest.TestCase):
 
     def test_should_create_product(self):
         # Arrange
-        mock_product = Product(
-            id=uuid4(),
-            sku="test_sku",
-            name="Test Product",
-            description="Test Description",
-            image_url="http://example.com/image.png",
-            price=Price(id=uuid4(), value=100.0, discount_percent=0.0),
-            inventory=Inventory(id=uuid4(), quantity=10, reserved=0),
-            category=Category(id=uuid4(), name="Test Category"),
-        )
+        mock_product = ProductHelper.create_product()
         self.mock_sessionmaker.return_value.execute.return_value = Mock(
             inserted_primary_key=[mock_product.id]
         )
@@ -83,19 +71,11 @@ class TestProductPostgresAdapter(unittest.TestCase):
 
     def test_should_handle_create_product_database_exception(self):
         # Arrange
-        mock_product = Product(
-            id=uuid4(),
-            sku="test_sku",
-            name="Test Product",
-            description="Test Description",
-            image_url="http://example.com/image.png",
-            price=Price(id=uuid4(), value=100.0, discount_percent=0.0),
-            inventory=Inventory(id=uuid4(), quantity=10, reserved=0),
-            category=Category(id=uuid4(), name="Test Category"),
+        mock_product = ProductHelper.create_product()
+        fetchone = (
+            self.mock_sessionmaker.return_value().execute.return_value.fetchone
         )
-        self.mock_sessionmaker.return_value.execute.side_effect = Exception(
-            "Mock DB Error"
-        )
+        fetchone.side_effect = Exception("Mock DB Error")
 
         # Act & Assert
         with self.assertRaises(DatabaseException):
@@ -111,18 +91,12 @@ class TestProductPostgresAdapter(unittest.TestCase):
 
     def test_should_handle_create_product_integrity_error(self):
         # Arrange
-        mock_product = Product(
-            id=uuid4(),
-            sku="test_sku",
-            name="Test Product",
-            description="Test Description",
-            image_url="http://example.com/image.png",
-            price=Price(id=uuid4(), value=100.0, discount_percent=0.0),
-            inventory=Inventory(id=uuid4(), quantity=10, reserved=0),
-            category=Category(id=uuid4(), name="Test Category"),
+        mock_product = ProductHelper.create_product()
+        fetchone = (
+            self.mock_sessionmaker.return_value().execute.return_value.fetchone
         )
-        self.mock_sessionmaker.return_value.execute.side_effect = (
-            IntegrityError(params=[], orig=Exception, statement="")
+        fetchone.side_effect = IntegrityError(
+            params=[], orig=Exception, statement=""
         )
 
         # Act & Assert
@@ -139,59 +113,12 @@ class TestProductPostgresAdapter(unittest.TestCase):
 
     def test_should_get_product_by_sku(self):
         # Arrange
-        product_id = uuid4()
-        inventory_id = uuid4()
-        price_id = uuid4()
-        category_id = uuid4()
-        mock_product = Product(
-            id=product_id,
-            sku="test_sku",
-            name="Test Product",
-            description="Test Description",
-            image_url="http://example.com/image.png",
-            price=Price(id=uuid4(), value=100.0, discount_percent=0.0),
-            inventory=Inventory(id=uuid4(), quantity=10, reserved=0),
-            category=Category(id=uuid4(), name="Test Category"),
+        mock_product = ProductHelper.create_product()
+        mock_product_tuple = ProductHelper.create_product_tuple(
+            product=mock_product
         )
-        Row = namedtuple(
-            "row",
-            [
-                "product_id",
-                "product_sku",
-                "product_version",
-                "product_name",
-                "product_description",
-                "product_image_url",
-                "price_id",
-                "price_value",
-                "price_discount_percent",
-                "inventory_id",
-                "inventory_quantity",
-                "inventory_reserved",
-                "category_id",
-                "category_name",
-            ],
-        )
-
         self.mock_sessionmaker.return_value().execute.return_value.fetchone = (
-            Mock(
-                return_value=Row(
-                    product_id,
-                    "test_sku",
-                    1,
-                    "Test Product",
-                    "Test Description",
-                    "http://example.com/image.png",
-                    price_id,
-                    100.0,
-                    0.0,
-                    inventory_id,
-                    10,
-                    0,
-                    category_id,
-                    "Test Category",
-                )
-            )
+            Mock(return_value=mock_product_tuple)
         )
 
         # Act

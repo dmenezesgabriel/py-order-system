@@ -121,10 +121,12 @@ class ProductPostgresAdapter(ProductRepository):
                     insert_category = insert(self.__category_table).values(
                         id=product.category.id, name=product.category.name
                     )
-                    category_result = session.execute(insert_category)
-                    if not hasattr(category_result, "inserted_primary_key"):
+                    category_result_row = session.execute(insert_category)
+                    if not hasattr(
+                        category_result_row, "inserted_primary_key"
+                    ):
                         raise on_not_found
-                    category_id = category_result.inserted_primary_key[0]
+                    category_id = category_result_row.inserted_primary_key[0]
 
             logger.info("Inserting")
             insert_product = insert(self.__product_table).values(
@@ -245,17 +247,17 @@ class ProductPostgresAdapter(ProductRepository):
         except NoResultFound as error:
             logger.error(error)
             raise on_not_found
-        # except Exception as error:
-        #     logger.error(error)
-        #     if type(error) is type(on_not_found):
-        #         raise
+        except Exception as error:
+            logger.error(error)
+            if type(error) is type(on_not_found):
+                raise
 
-        #     raise DatabaseException(
-        #         {
-        #             "code": "database.error.select",
-        #             "message": f"Error searching product by sku :{error}",
-        #         }
-        #     )
+            raise DatabaseException(
+                {
+                    "code": "database.error.select",
+                    "message": f"Error searching product by sku :{error}",
+                }
+            )
 
     def update_product(
         self,
@@ -341,10 +343,12 @@ class ProductPostgresAdapter(ProductRepository):
                     insert_category = insert(self.__category_table).values(
                         id=product.category.id, name=product.category.name
                     )
-                    category_result = session.execute(insert_category)
-                    if not hasattr(category_result, "inserted_primary_key"):
+                    category_result_row = session.execute(insert_category)
+                    if not hasattr(
+                        category_result_row, "inserted_primary_key"
+                    ):
                         raise on_not_found
-                    category_id = category_result.inserted_primary_key[0]
+                    category_id = category_result_row.inserted_primary_key[0]
             session.commit()
             return self.get_product_by_sku(
                 sku=product.sku, on_not_found=on_not_found
